@@ -13,6 +13,8 @@ const negotiationRoutes = require('./routes/negotiationRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const fulfillmentRoutes = require('./routes/fulfillmentRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const customerPortalRoutes = require('./routes/customerPortalRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
@@ -31,7 +33,9 @@ app.get('/', (req, res) => {
 });
 
 // API Routes Registration
+app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
+app.use('/api/customer', customerPortalRoutes);
 app.use('/api/deals', dealRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/quotes', quoteRoutes);

@@ -13,9 +13,17 @@ interface TableProps<T> {
   keyExtractor: (item: T) => string;
   emptyMessage?: string;
   onRowClick?: (item: T) => void;
+  minWidth?: string;
 }
 
-export function Table<T>({ data, columns, keyExtractor, emptyMessage = 'No data available', onRowClick }: TableProps<T>) {
+export function Table<T>({
+  data,
+  columns,
+  keyExtractor,
+  emptyMessage = 'No data available',
+  onRowClick,
+  minWidth = '1000px',
+}: TableProps<T>) {
   if (!data || data.length === 0) {
     return (
       <div className="py-12 text-center text-[var(--text-tertiary)] text-sm border border-dashed border-[var(--border-subtle)] rounded-xl">
@@ -26,7 +34,7 @@ export function Table<T>({ data, columns, keyExtractor, emptyMessage = 'No data 
 
   return (
     <div className="table-container overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
-      <table className="w-full text-left text-sm border-collapse">
+      <table className="w-full text-left text-sm border-collapse" style={{ minWidth }}>
         <thead className="bg-[var(--bg-card-hover)] border-b border-[var(--border-subtle)]">
           <tr>
             {columns.map((col, idx) => (
@@ -40,9 +48,9 @@ export function Table<T>({ data, columns, keyExtractor, emptyMessage = 'No data 
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--border-subtle)] bg-[var(--bg-card)]">
-          {data.map((item) => (
+          {data.map((item, idx) => (
             <tr
-              key={keyExtractor(item)}
+              key={`${keyExtractor(item)}-${idx}`}
               onClick={() => onRowClick && onRowClick(item)}
               className={`table-row transition-colors ${onRowClick ? 'cursor-pointer hover:bg-[var(--bg-card-hover)]' : ''}`}
             >

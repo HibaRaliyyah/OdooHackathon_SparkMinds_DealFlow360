@@ -27,6 +27,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => { success: boolean; error?: string };
   logout: () => void;
+  setCurrentUser: (user: User) => void;
 }
 
 // ─── App State ────────────────────────────────────────────────
@@ -121,6 +122,7 @@ export const useStore = create<AppState>()(
       },
 
       logout: () => set({ currentUser: null, isAuthenticated: false }),
+      setCurrentUser: (user) => set({ currentUser: user, isAuthenticated: true }),
 
       // Initial data
       users: USERS,

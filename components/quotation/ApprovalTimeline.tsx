@@ -10,12 +10,12 @@ interface ApprovalTimelineProps {
 }
 
 export function ApprovalTimeline({ approvalRequest }: ApprovalTimelineProps) {
-  if (!approvalRequest) {
-    return (
-      <div className="p-6 border border-dashed border-[var(--border-subtle)] rounded-xl text-center text-xs text-[var(--text-tertiary)]">
-        No formal approval request submitted for this quotation. (Standard Rep Authority)
-      </div>
-    );
+  if (
+    !approvalRequest ||
+    (approvalRequest.stage as string) === 'Auto-Approved' ||
+    (approvalRequest.status as string) === 'Auto-Approved'
+  ) {
+    return null;
   }
 
   const stages = [
@@ -33,9 +33,9 @@ export function ApprovalTimeline({ approvalRequest }: ApprovalTimelineProps) {
         </div>
         <Badge
           variant={
-            approvalRequest.status === 'Approved' || approvalRequest.status === 'Auto-Approved'
+            (approvalRequest.status as string) === 'Approved' || (approvalRequest.status as string) === 'Auto-Approved'
               ? 'success'
-              : approvalRequest.status === 'Rejected'
+              : (approvalRequest.status as string) === 'Rejected'
               ? 'danger'
               : 'warning'
           }

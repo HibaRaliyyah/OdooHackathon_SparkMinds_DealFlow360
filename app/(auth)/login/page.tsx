@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/data/store';
+import { authService } from '@/lib/services/api/authService';
 import {
   Mail,
   Lock,
@@ -260,22 +261,39 @@ export default function LoginPage() {
     }
   };
 
-  const handleLogin = (e?: React.FormEvent) => {
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
-    setTimeout(() => {
-      const result = login(email, password);
-      if (result.success) {
-        if (
-          activeModule === 'customer' ||
-          email.includes('customer') ||
-          email === 'tom@acmecorp.com' ||
-          email === 'sarah@betaind.com' ||
-          email === 'priya@zenithco.com' ||
-          email === 'carlos@deltallc.com'
-        ) {
+    try {
+      // 1. Try real API Login first
+      const response = await authService.login({ email, password });
+
+      if (response.success && response.data) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('df360_token', response.data.token);
+          localStorage.setItem('df360_user', JSON.stringify(response.data.user));
+        }
+
+        // Sync local store
+        login(email, password);
+
+        const userRole = response.data.user.role;
+        if (userRole === 'CUSTOMER' || activeModule === 'customer') {
+          router.push('/portal/quotation');
+        } else if (userRole === 'ADMIN' || email === 'admin@dealflow360.demo') {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+        return;
+      }
+
+      // 2. Fallback to mock store login if backend endpoint un-reachable
+      const localResult = login(email, password);
+      if (localResult.success) {
+        if (activeModule === 'customer' || email.includes('customer')) {
           router.push('/portal/quotation');
         } else if (email === 'admin@dealflow360.demo') {
           router.push('/admin');
@@ -283,19 +301,62 @@ export default function LoginPage() {
           router.push('/dashboard');
         }
       } else {
-        setError(result.error || 'Invalid credentials. Password is demo1234');
-        setLoading(false);
+        setError(response.message || localResult.error || 'Invalid credentials. Demo password is demo1234');
       }
-    }, 350);
+    } catch (err: any) {
+      // Fallback
+      const localResult = login(email, password);
+      if (localResult.success) {
+        if (activeModule === 'customer' || email.includes('customer')) {
+          router.push('/portal/quotation');
+        } else if (email === 'admin@dealflow360.demo') {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+      } else {
+        setError('Login failed. Please check your credentials.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      login('sales@dealflow360.demo', 'demo1234');
-      router.push('/dashboard');
-    }, 400);
+    setError('');
+
+    try {
+      const response = await authService.signup({
+        name: name || 'Demo Staff User',
+        email,
+        password: password || 'demo1234',
+        role: signupRole,
+        company: activeModule === 'customer' ? 'Acme Corp' : 'DealFlow360 Internal',
+      });
+
+      if (response.success && response.data) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('df360_token', response.data.token);
+          localStorage.setItem('df360_user', JSON.stringify(response.data.user));
+        }
+
+        login(email, password);
+
+        if (response.data.user.role === 'CUSTOMER' || activeModule === 'customer') {
+          router.push('/portal/quotation');
+        } else {
+          router.push('/dashboard');
+        }
+      } else {
+        setError(response.message || 'Signup failed. Please try again.');
+      }
+    } catch (err: any) {
+      setError('Signup failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSendMagicLink = (e: React.FormEvent) => {

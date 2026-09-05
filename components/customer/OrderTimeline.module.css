@@ -1,0 +1,72 @@
+.timeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 1.5rem 0.5rem;
+}
+
+.line {
+  position: absolute;
+  top: 50%;
+  left: 2rem;
+  right: 2rem;
+  height: 2px;
+  background-color: var(--border-subtle);
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.progressLine {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #6366f1);
+  transition: width 0.3s ease;
+}
+
+.step {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.node {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background-color: #0f172a;
+  border: 2px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.nodeActive {
+  background-color: #6366f1;
+  border-color: #818cf8;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+}
+
+.nodeCompleted {
+  background-color: #10b981;
+  border-color: #34d399;
+  color: #ffffff;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-align: center;
+}
+
+.labelActive {
+  color: #ffffff;
+}

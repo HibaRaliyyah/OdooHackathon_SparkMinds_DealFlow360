@@ -215,7 +215,7 @@ export interface ApprovalRequest {
 }
 
 // ─── Negotiations ────────────────────────────────────────────
-export type NegotiationStatus = 'Open' | 'Resolved' | 'Rejected';
+export type NegotiationStatus = 'Open' | 'Resolved' | 'Rejected' | 'Counter-Offered';
 
 export interface NegotiationMessage {
   id: string;

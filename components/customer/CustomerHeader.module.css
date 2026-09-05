@@ -1,0 +1,117 @@
+.header {
+  height: 4rem;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.titleText {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.badge {
+  font-size: 0.625rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.rightArea {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tierBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.bellBtn {
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.625rem;
+  background-color: var(--bg-card-hover);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.bellBtn:hover {
+  background-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+.bellDot {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.375rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: var(--accent-rose);
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--border-medium);
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.userName {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.userCompany {
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+}

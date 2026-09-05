@@ -19,7 +19,7 @@ export function BackButton({ href, label = 'Back', className = '', showLabel = t
     <button
       onClick={() => (!href ? router.back() : undefined)}
       type="button"
-      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 hover:border-indigo-500/40 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-95 ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--bg-card)] hover:bg-[var(--bg-card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-medium)] hover:border-sky-500/40 text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-95 ${className}`}
       title="Go back to previous screen"
     >
       <ArrowLeft className="w-3.5 h-3.5" />

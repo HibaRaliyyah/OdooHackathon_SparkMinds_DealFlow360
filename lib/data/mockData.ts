@@ -519,6 +519,48 @@ export const NEGOTIATIONS: NegotiationRequest[] = [
     triggeredReapproval: false,
     createdAt: '2026-08-24T10:00:00Z', updatedAt: '2026-08-25T09:00:00Z',
   },
+  {
+    id: 'neg-2', quotationId: 'quot-1039', quotationNumber: 'Q-1039',
+    customerId: 'cust-2', customerName: 'Beta Industries',
+    status: 'Open',
+    requestedChanges: [
+      { lineId: 'qi-10', productName: 'Laptop Pro 14', requestedDiscount: 20, comment: 'We are buying 8 units. Requesting 20% volume discount.' },
+    ],
+    messages: [
+      { id: 'msg-5', negotiationId: 'neg-2', senderId: 'cust-user-2', senderName: 'Sarah Beta', senderRole: 'CUSTOMER', message: 'We need 20% discount on the Laptop Pro 14 batch to sign today.', timestamp: '2026-08-30T14:20:00Z' },
+      { id: 'msg-6', negotiationId: 'neg-2', senderId: 'user-2', senderName: 'Jasmine Rao', senderRole: 'SALES_REP', message: '20% exceeds rep limit. Submitting for manager approval sign-off.', timestamp: '2026-08-31T09:15:00Z' },
+    ],
+    triggeredReapproval: true,
+    createdAt: '2026-08-30T14:20:00Z', updatedAt: '2026-08-31T09:15:00Z',
+  },
+  {
+    id: 'neg-3', quotationId: 'quot-1041', quotationNumber: 'Q-1041',
+    customerId: 'cust-5', customerName: 'Delta LLC',
+    status: 'Counter-Offered',
+    requestedChanges: [
+      { lineId: 'qi-12', productName: 'Care Plan 2yr', requestedDiscount: 18, comment: 'Targeting 18% overall discount on multi-year subscription.' },
+    ],
+    messages: [
+      { id: 'msg-7', negotiationId: 'neg-3', senderId: 'cust-user-5', senderName: 'Marcus Delta', senderRole: 'CUSTOMER', message: 'Can we get 18% discount on Care Plan for 10 units?', timestamp: '2026-09-01T11:00:00Z' },
+      { id: 'msg-8', negotiationId: 'neg-3', senderId: 'user-2', senderName: 'Jasmine Rao', senderRole: 'SALES_REP', message: 'We can approve 14% with 2-year commitment.', timestamp: '2026-09-02T16:45:00Z' },
+    ],
+    triggeredReapproval: false,
+    createdAt: '2026-09-01T11:00:00Z', updatedAt: '2026-09-02T16:45:00Z',
+  },
+  {
+    id: 'neg-4', quotationId: 'quot-1040', quotationNumber: 'Q-1040',
+    customerId: 'cust-4', customerName: 'Zenith Co',
+    status: 'Resolved',
+    requestedChanges: [
+      { lineId: 'qi-4', productName: 'USB4 Docking Station', requestedDeliveryDate: '2026-09-15', comment: 'Express delivery required for new office onboarding.' },
+    ],
+    messages: [
+      { id: 'msg-9', negotiationId: 'neg-4', senderId: 'cust-user-4', senderName: 'Elena Zenith', senderRole: 'CUSTOMER', message: 'Need dockings delivered by Sept 15th to align with team onboarding.', timestamp: '2026-08-20T08:30:00Z' },
+      { id: 'msg-10', negotiationId: 'neg-4', senderId: 'user-2', senderName: 'Jasmine Rao', senderRole: 'SALES_REP', message: 'Confirmed with warehouse. Split shipment scheduled for Sept 14th delivery.', timestamp: '2026-08-20T10:15:00Z' },
+    ],
+    triggeredReapproval: false,
+    createdAt: '2026-08-20T08:30:00Z', updatedAt: '2026-08-20T10:15:00Z',
+  },
 ];
 
 // ─── Fulfillment ──────────────────────────────────────────────

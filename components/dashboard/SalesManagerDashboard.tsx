@@ -18,10 +18,15 @@ import {
   AlertOctagon,
   Sliders,
   Shield,
+  Warehouse,
+  Boxes,
+  Truck,
+  MapPin,
+  PackageCheck,
 } from 'lucide-react';
 
 export function SalesManagerDashboard() {
-  const { approvalRequests, quotations, dealHealthFlags, addApprovalAction, updateApprovalStage, addActivity } = useStore();
+  const { approvalRequests, quotations, dealHealthFlags, fulfillmentOrders, warehouses, addApprovalAction, updateApprovalStage, addActivity } = useStore();
 
   const pendingApprovals = approvalRequests.filter((r) => r.status === 'Pending');
   const highRiskQuotes = quotations.filter((q) => q.blendedRisk?.riskLevel === 'HIGH');
@@ -276,6 +281,102 @@ export function SalesManagerDashboard() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Recommended Warehouse Split & Multi-Depot Stock Allocation */}
+      <div className="card p-6 bg-[var(--bg-card)] border border-indigo-500/20 shadow-xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                <Truck className="w-4 h-4" />
+              </span>
+              <h3 className="text-base font-extrabold text-white">
+                Recommended Warehouse Split & Fulfillment Allocation
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Multi-depot parcel split optimizer automatically allocating inventory from Main Hub & regional depots to minimize freight costs and lead times.
+            </p>
+          </div>
+          <Link href="/fulfillment">
+            <Button variant="outline" size="sm" rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}>
+              View Fulfillment Optimizer
+            </Button>
+          </Link>
+        </div>
+
+        {/* Live Warehouse Depot Status Strip */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {warehouses.map((wh) => (
+            <div key={wh.id} className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-lg bg-slate-800 text-indigo-400">
+                  <Warehouse className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white">{wh.name}</div>
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <MapPin className="w-2.5 h-2.5 text-slate-500" />
+                    <span>{wh.location}</span>
+                  </div>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                Stock Active
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Recommended Split Orders List */}
+        <div className="space-y-4 pt-1">
+          {fulfillmentOrders.map((order) => (
+            <div key={order.id} className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80 text-xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-mono font-extrabold text-white text-sm">Order #{order.quotationNumber}</span>
+                  <span className="text-slate-400">— {order.customerName}</span>
+                  <Badge variant={order.status === 'Completed' || order.status === 'Allocated' ? 'success' : 'warning'}>
+                    {order.status}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-semibold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-indigo-400" /> Multi-Depot Split Calculated
+                  </span>
+                </div>
+              </div>
+
+              {/* Sub-allocations grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(order.allocations || []).map((alloc, idx) => (
+                  <div key={idx} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/70 text-xs space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-white flex items-center gap-1.5 text-xs">
+                        <Boxes className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>{alloc.warehouseName}</span>
+                      </span>
+                      <span className="font-mono font-extrabold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        {alloc.allocatedQty} Unit{alloc.allocatedQty > 1 ? 's' : ''} Allocated
+                      </span>
+                    </div>
+                    <div className="text-slate-400 text-[11px] flex justify-between">
+                      <span className="text-slate-300 font-medium">Item: {alloc.productName}</span>
+                      <span className="text-slate-400">Parcel 1/1</span>
+                    </div>
+                    <div className="pt-1 flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-900">
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <PackageCheck className="w-3 h-3 text-emerald-400" /> Stock Reserved
+                      </span>
+                      <span className="font-mono text-slate-400">Freight: $35.00 est.</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Team Quota & High Risk Monitor */}

@@ -27,7 +27,9 @@ import {
 } from 'recharts';
 
 export default function ReportsPage() {
-  const { quotations, products, users } = useStore();
+  const { quotations, products, users, currentUser } = useStore();
+
+  const canExport = currentUser?.role !== 'SALES_REP';
 
   const [period, setPeriod] = useState('all');
   const [rep, setRep] = useState('all');
@@ -43,19 +45,31 @@ export default function ReportsPage() {
       { id: 'user-4', name: 'Sarah Jenkins' },
       { id: 'user-1', name: 'Alex Admin' },
     ];
-    const seen = new Set<string>(list.map(r => r.name));
+    const seenNames = new Set<string>(list.map((r) => r.name));
+    const seenIds = new Set<string>(list.map((r) => r.id));
 
     users.forEach((u) => {
-      if (['SALES_REP', 'SALES_MANAGER', 'ADMIN'].includes(u.role) && !seen.has(u.name)) {
-        seen.add(u.name);
-        list.push({ id: u.id, name: u.name });
+      if (['SALES_REP', 'SALES_MANAGER', 'ADMIN'].includes(u.role) && !seenNames.has(u.name)) {
+        seenNames.add(u.name);
+        let uniqueId = u.id;
+        if (seenIds.has(uniqueId)) {
+          uniqueId = `user-${u.id}-${u.name.replace(/\s+/g, '-').toLowerCase()}`;
+        }
+        seenIds.add(uniqueId);
+        list.push({ id: uniqueId, name: u.name });
       }
     });
 
     quotations.forEach((q) => {
-      if (q.assignedTo && !seen.has(q.assignedTo)) {
-        seen.add(q.assignedTo);
-        list.push({ id: q.assignedToId || q.assignedTo, name: q.assignedTo });
+      if (q.assignedTo && !seenNames.has(q.assignedTo)) {
+        seenNames.add(q.assignedTo);
+        const baseId = q.assignedToId || q.assignedTo;
+        let uniqueId = baseId;
+        if (seenIds.has(uniqueId)) {
+          uniqueId = `rep-${q.assignedTo.replace(/\s+/g, '-').toLowerCase()}`;
+        }
+        seenIds.add(uniqueId);
+        list.push({ id: uniqueId, name: q.assignedTo });
       }
     });
 
@@ -237,7 +251,7 @@ export default function ReportsPage() {
               </span>
             </div>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight mt-1.5">
+          <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight mt-1.5">
             Executive Sales Performance & Governance Reports
           </h1>
           <p className="text-xs text-slate-400 mt-1">
@@ -245,24 +259,26 @@ export default function ReportsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<FileText className="w-4 h-4 text-rose-400" />}
-            onClick={() => handleExport('PDF')}
-          >
-            Export PDF
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-400" />}
-            onClick={() => handleExport('XLS')}
-          >
-            Export XLS
-          </Button>
-        </div>
+        {canExport && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<FileText className="w-4 h-4 text-rose-400" />}
+              onClick={() => handleExport('PDF')}
+            >
+              Export PDF
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-400" />}
+              onClick={() => handleExport('XLS')}
+            >
+              Export XLS
+            </Button>
+          </div>
+        )}
       </div>
 
       {exportNotice && (
@@ -273,7 +289,7 @@ export default function ReportsPage() {
       )}
 
       {/* 4 Reporting Filters (Period, Sales Team / Rep, Approval Status, Product / Category) */}
-      <div className="card p-5 bg-[var(--bg-card)] border border-slate-800 space-y-4">
+      <div className="card p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-indigo-300 uppercase tracking-wider">
             <Filter className="w-3.5 h-3.5 text-indigo-400" />
@@ -296,13 +312,13 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {/* Period */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
               Period
             </label>
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value)}
-              className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-indigo)]"
             >
               <option value="all">All Time</option>
               <option value="today">Today</option>
@@ -314,17 +330,17 @@ export default function ReportsPage() {
 
           {/* Sales Rep */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
               Sales Team / Rep
             </label>
             <select
               value={rep}
               onChange={(e) => setRep(e.target.value)}
-              className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-indigo)]"
             >
               <option value="all">All Sales Reps</option>
-              {salesReps.map((r) => (
-                <option key={r.id} value={r.name}>
+              {salesReps.map((r, idx) => (
+                <option key={`rep-opt-${r.id}-${idx}`} value={r.name}>
                   {r.name}
                 </option>
               ))}
@@ -333,13 +349,13 @@ export default function ReportsPage() {
 
           {/* Approval Status */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
               Approval Status
             </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-indigo)]"
             >
               <option value="all">All Statuses</option>
               <option value="pending">Pending Approvals</option>
@@ -350,13 +366,13 @@ export default function ReportsPage() {
 
           {/* Product / Category */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] mb-1">
               Product / Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+              className="w-full bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-indigo)]"
             >
               <option value="all">All Categories</option>
               <option value="hardware">Hardware</option>
@@ -371,7 +387,7 @@ export default function ReportsPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card title="Total Pipeline Value" subtitle="Aggregated deal volume ($ ARR)">
-          <div className="text-3xl font-black font-mono text-white my-2">
+          <div className="text-3xl font-black font-mono text-[var(--text-primary)] my-2">
             ${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
           <p className="text-xs text-emerald-400 font-semibold">
@@ -401,7 +417,7 @@ export default function ReportsPage() {
       {/* Category Performance & Discount Breakdown Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-6 bg-[var(--bg-card)]">
-          <h3 className="text-base font-extrabold text-white flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+          <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2 mb-4 pb-2 border-b border-[var(--border-subtle)]">
             <BarChart3 className="w-4 h-4 text-indigo-400" /> Revenue by Product Category (Filtered)
           </h3>
           <div className="h-60 w-full">
@@ -433,7 +449,7 @@ export default function ReportsPage() {
 
         {/* Most Discounted & Best Selling Items */}
         <div className="card p-6 bg-[var(--bg-card)]">
-          <h3 className="text-base font-extrabold text-white flex items-center gap-2 mb-4 pb-2 border-b border-slate-800">
+          <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2 mb-4 pb-2 border-b border-[var(--border-subtle)]">
             <Percent className="w-4 h-4 text-amber-400" /> Best Selling vs Most Discounted SKUs
           </h3>
 
@@ -443,14 +459,14 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {topSkus.map((sku) => (
+              {topSkus.map((sku, idx) => (
                 <div
-                  key={sku.name}
-                  className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between text-xs"
+                  key={`${sku.name}-${idx}`}
+                  className="p-3.5 rounded-xl bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] flex items-center justify-between text-xs"
                 >
                   <div>
-                    <div className="font-bold text-white">{sku.name}</div>
-                    <div className="text-slate-400 text-[11px]">
+                    <div className="font-bold text-[var(--text-primary)]">{sku.name}</div>
+                    <div className="text-[var(--text-secondary)] text-[11px]">
                       {sku.category} · Volume: {sku.sales}
                     </div>
                   </div>
@@ -479,16 +495,16 @@ export default function ReportsPage() {
 
       {/* Filtered Quotations Detail List Table */}
       <div className="card p-6 bg-[var(--bg-card)] space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+        <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+          <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
             <FileSearch className="w-4 h-4 text-emerald-400" /> Matched Quotations & Deals ({filteredQuotations.length})
           </h3>
         </div>
 
         {filteredQuotations.length === 0 ? (
-          <div className="p-8 text-center bg-slate-900/40 rounded-2xl border border-slate-800 space-y-3">
-            <div className="text-slate-400 text-sm font-semibold">No quotations found for active filter combination</div>
-            <p className="text-xs text-slate-500">Try adjusting your period, rep, approval status, or category filter.</p>
+          <div className="p-8 text-center bg-[var(--bg-card-hover)] rounded-2xl border border-[var(--border-subtle)] space-y-3">
+            <div className="text-[var(--text-primary)] text-sm font-semibold">No quotations found for active filter combination</div>
+            <p className="text-xs text-[var(--text-tertiary)]">Try adjusting your period, rep, approval status, or category filter.</p>
             <Button size="sm" variant="outline" onClick={resetFilters}>
               Reset Filters
             </Button>
@@ -505,11 +521,11 @@ export default function ReportsPage() {
               },
               {
                 header: 'Customer',
-                cell: (q) => <span className="font-medium text-white">{q.customerName}</span>,
+                cell: (q) => <span className="font-medium text-[var(--text-primary)]">{q.customerName}</span>,
               },
               {
                 header: 'Sales Rep',
-                cell: (q) => <span className="text-slate-300 text-xs">{q.assignedTo}</span>,
+                cell: (q) => <span className="text-[var(--text-secondary)] text-xs">{q.assignedTo}</span>,
               },
               {
                 header: 'Stage',
@@ -546,7 +562,7 @@ export default function ReportsPage() {
               {
                 header: 'Total Value ($)',
                 cell: (q) => (
-                  <span className="font-mono font-black text-white">
+                  <span className="font-mono font-black text-[var(--text-primary)]">
                     ${((q.oneTimeTotal || 0) + (q.recurringTotal || 0)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                   </span>
                 ),

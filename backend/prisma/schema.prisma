@@ -15,6 +15,14 @@ datasource db {
 
 // ─── ENUMS ───────────────────────────────────────────────────
 
+enum UserRole {
+  ADMIN
+  SALES_REP
+  SALES_MANAGER
+  FINANCE
+  CUSTOMER
+}
+
 enum DealStatus {
   NEW
   QUALIFIED
@@ -62,10 +70,22 @@ enum FulfillmentStatus {
 
 // ─── MODELS ──────────────────────────────────────────────────
 
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   @default("$2a$10$abcdefghijklmnopqrstuu") // Bcrypt hash
+  name      String
+  role      UserRole @default(SALES_REP)
+  company   String?  @default("DealFlow360 Internal")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Customer {
   id           String    @id @default(uuid())
   name         String
   email        String    @unique
+  password     String?   @default("$2a$10$abcdefghijklmnopqrstuu")
   phone        String?
   company      String
   tier         String    @default("Gold") // Bronze, Silver, Gold, Platinum

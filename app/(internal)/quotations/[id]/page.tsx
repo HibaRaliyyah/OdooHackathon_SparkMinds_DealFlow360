@@ -15,6 +15,7 @@ import {
   XCircle,
   Boxes,
   Building,
+  Truck,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { FulfillmentOrder } from '@/lib/types';
@@ -28,6 +29,7 @@ export default function QuotationDetailPage() {
   const {
     quotations,
     approvalRequests,
+    fulfillmentOrders,
     updateQuotation,
     addApprovalAction,
     updateApprovalStage,
@@ -43,6 +45,9 @@ export default function QuotationDetailPage() {
 
   const quotation = quotations.find((q: any) => q.id === id);
   const approvalReq = approvalRequests.find((r: any) => r.quotationId === id);
+  const fulfillmentOrder = (fulfillmentOrders || []).find(
+    (f: any) => f.quotationId === id || f.quotationNumber === quotation?.quoteNumber
+  );
 
   const authCheck = approvalReq
     ? canApproveQuotation(
@@ -251,6 +256,51 @@ export default function QuotationDetailPage() {
           </table>
         </div>
       </div>
+
+      {/* Recommended Warehouse Split Card */}
+      {fulfillmentOrder && (
+        <div className="card p-6 bg-[var(--bg-card)] border border-indigo-500/20 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                <Truck className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-white">Recommended Warehouse Split & Fulfillment Allocation</h3>
+                <p className="text-xs text-slate-400">Automated multi-depot inventory allocation calculated for this quotation</p>
+              </div>
+            </div>
+            <Badge variant={fulfillmentOrder.status === 'Completed' || fulfillmentOrder.status === 'Allocated' ? 'success' : 'warning'}>
+              {fulfillmentOrder.status}
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(fulfillmentOrder.allocations || []).map((alloc: any, idx: number) => (
+              <div key={idx} className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <Boxes className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{alloc.warehouseName}</span>
+                  </span>
+                  <span className="font-mono font-extrabold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    {alloc.allocatedQty} Unit{alloc.allocatedQty > 1 ? 's' : ''} Allocated
+                  </span>
+                </div>
+                <div className="text-slate-400 text-[11px] flex justify-between">
+                  <span className="text-slate-300 font-medium">Product: {alloc.productName}</span>
+                  <span className="text-slate-400">Parcel 1/1 ($35.00 est. freight)</span>
+                </div>
+                <div className="pt-1 flex items-center justify-between text-[10px] text-emerald-400 border-t border-slate-900">
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> 100% Stock Reserved & Ready
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Blended Risk Matrix & Approval Timeline */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

@@ -29,7 +29,9 @@ import { BackButton } from '@/components/ui/BackButton';
 import type { DealHealthFlag } from '@/lib/types';
 
 export default function DealHealthPage() {
-  const { dealHealthFlags, quotations, addActivity, addNotification } = useStore();
+  const { dealHealthFlags, quotations, addActivity, addNotification, currentUser } = useStore();
+
+  const canTriggerNudge = currentUser?.role === 'SALES_MANAGER' || currentUser?.role === 'ADMIN';
 
   // Active Notice Banner
   const [escalatedNotice, setEscalatedNotice] = useState('');
@@ -63,13 +65,14 @@ export default function DealHealthPage() {
 
     const q = quotations.find((item) => item.id === selectedFlag.quotationId);
     const qNum = q?.quoteNumber || selectedFlag.quotationNumber || selectedFlag.quotationId;
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const repName = q?.assignedTo || 'Jasmine Rao';
+    const statusText = `Nudge sent to ${repName}`;
 
     // Add activity log
     addActivity({
       id: `act-${Date.now()}`,
       type: 'alert',
-      message: `Automated Slack/Email escalation nudge dispatched to assigned Sales Rep & Manager for Quote #${qNum} (${selectedFlag.customerName}).`,
+      message: `Automated Slack/Email escalation nudge dispatched to ${repName} for Quote #${qNum} (${selectedFlag.customerName}).`,
       relatedTo: selectedFlag.id,
       timestamp: new Date().toISOString(),
     });
@@ -78,24 +81,63 @@ export default function DealHealthPage() {
     addNotification({
       id: `notif-${Date.now()}`,
       userId: 'user-2',
-      title: `Escalation Nudge Sent: Quote #${qNum}`,
+      title: `Escalation Nudge Sent to ${repName}`,
       message: `Deal Health Alert (${selectedFlag.type}): ${selectedFlag.description}`,
       type: 'warning',
       read: false,
       createdAt: new Date().toISOString(),
     });
 
-    // Mark flag as dispatched
+    // Mark flag as dispatched with rep name status
     setDispatchedFlags((prev) => ({
       ...prev,
-      [selectedFlag.id]: `Escalation Nudge Sent at ${timeStr}`,
+      [selectedFlag.id]: statusText,
     }));
 
     setEscalatedNotice(
-      `Automated escalation nudge successfully dispatched for Quote #${qNum} (${selectedFlag.customerName}) via Slack, Email & System Notification!`
+      `Automated escalation nudge successfully dispatched to ${repName} for Quote #${qNum} (${selectedFlag.customerName}) via Slack & Email!`
     );
     setSelectedFlag(null);
     setTimeout(() => setEscalatedNotice(''), 7000);
+  };
+
+  // Helper to resolve user-role appropriate status badge text & styling
+  const getFlagStatusInfo = (f: DealHealthFlag) => {
+    const q = quotations.find((item) => item.id === f.quotationId);
+    const repName = q?.assignedTo || 'Jasmine Rao';
+
+    if (!canTriggerNudge) {
+      // Sales Rep view: Nudges are submitted to the rep to follow up & evaluate
+      if (f.severity === 'HIGH') {
+        return {
+          text: 'Escalated to Sales Manager — Under Review',
+          variant: 'rose',
+        };
+      }
+      return {
+        text: 'Nudge Submitted to Rep to Evaluate',
+        variant: 'amber',
+      };
+    }
+
+    // Manager / Admin view
+    const isDispatched = dispatchedFlags[f.id] || f.actionTaken;
+    if (isDispatched) {
+      return {
+        text: dispatchedFlags[f.id] || f.actionTaken || `Nudge sent to ${repName}`,
+        variant: 'emerald',
+      };
+    }
+    if (f.severity === 'HIGH') {
+      return {
+        text: 'Escalated to Sales Manager',
+        variant: 'rose',
+      };
+    }
+    return {
+      text: `Nudge sent to ${repName}`,
+      variant: 'emerald',
+    };
   };
 
   // Group by Anomaly Types (B9: Stalled Deals, Discount Anomalies, Delivery Slippage)
@@ -132,6 +174,21 @@ export default function DealHealthPage() {
           <button onClick={() => setEscalatedNotice('')} className="text-emerald-400 hover:text-white text-xs font-bold px-2 py-1">
             Dismiss
           </button>
+        </div>
+      )}
+
+      {/* Sales Rep Live Nudge Notification Input Alert */}
+      {!canTriggerNudge && (
+        <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center justify-between shadow-lg animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <Bell className="w-5 h-5 text-amber-400 shrink-0 animate-pulse" />
+            <div>
+              <span className="font-extrabold text-white">Sales Representative Nudge & Escalation Center:</span>
+              <span className="ml-1.5 text-slate-300">
+                You receive automated nudge notifications when quotation inputs, discount anomalies, or delivery slippages require rep action. Review live status badges below.
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -183,12 +240,17 @@ export default function DealHealthPage() {
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <ShieldAlert className="w-4 h-4 text-rose-400" /> Active Anomaly Alerts & Escalation Center
           </h2>
-          <span className="text-xs text-slate-400">Click button below to open escalation dispatch modal</span>
+          <span className="text-xs text-slate-400">
+            {canTriggerNudge
+              ? 'Click button to send nudge to assigned representative'
+              : 'Automated telemetry monitoring & active escalation status'}
+          </span>
         </div>
 
         <Table
           data={dealHealthFlags}
           keyExtractor={(f) => f.id}
+          minWidth="1150px"
           columns={[
             {
               header: 'Quotation #',
@@ -224,19 +286,18 @@ export default function DealHealthPage() {
             {
               header: 'Description & Telemetry Root Cause',
               cell: (f) => {
-                const actionText = dispatchedFlags[f.id] || f.actionTaken;
+                const statusInfo = getFlagStatusInfo(f);
+
                 return (
                   <div>
                     <div className="text-xs font-semibold text-slate-200">{f.description}</div>
                     <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                       Detected: {new Date(f.detectedAt).toLocaleDateString()}
                     </div>
-                    {actionText && (
-                      <div className="text-[10px] font-medium text-emerald-400 mt-1 flex items-center gap-1">
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span>{actionText}</span>
-                      </div>
-                    )}
+                    <div className="text-[10px] font-medium text-amber-400 mt-1 flex items-center gap-1">
+                      <Check className="w-3 h-3 text-amber-400" />
+                      <span>{statusInfo.text}</span>
+                    </div>
                   </div>
                 );
               },
@@ -244,24 +305,67 @@ export default function DealHealthPage() {
             {
               header: 'Automated Actions',
               cell: (f) => {
-                const isDispatched = Boolean(dispatchedFlags[f.id]);
+                const q = quotations.find((item) => item.id === f.quotationId);
+                const repName = q?.assignedTo || 'Jasmine Rao';
+                const statusInfo = getFlagStatusInfo(f);
 
                 return (
                   <div className="flex items-center gap-2">
-                    {isDispatched ? (
-                      <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 cursor-default select-none">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Nudge Dispatched</span>
-                      </span>
+                    {canTriggerNudge ? (
+                      dispatchedFlags[f.id] || f.actionTaken ? (
+                        <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 cursor-default select-none">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{dispatchedFlags[f.id] || f.actionTaken}</span>
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          leftIcon={<Bell className="w-3.5 h-3.5 text-amber-400" />}
+                          onClick={() => {
+                            const nudgeText = `Nudge sent to ${repName}`;
+                            setDispatchedFlags((prev) => ({
+                              ...prev,
+                              [f.id]: nudgeText,
+                            }));
+                            addActivity({
+                              id: `act-${Date.now()}`,
+                              type: 'alert',
+                              message: `Escalation nudge dispatched to ${repName} for Quote ${f.quotationNumber || f.quotationId}.`,
+                              relatedTo: f.id,
+                              timestamp: new Date().toISOString(),
+                            });
+                            addNotification({
+                              id: `notif-${Date.now()}`,
+                              userId: 'user-2',
+                              title: `Escalation Nudge Sent: Quote #${f.quotationNumber || f.quotationId}`,
+                              message: `Nudge dispatched to ${repName}: ${f.description}`,
+                              type: 'warning',
+                              read: false,
+                              createdAt: new Date().toISOString(),
+                            });
+                            setEscalatedNotice(`Nudge successfully sent to ${repName}!`);
+                            setTimeout(() => setEscalatedNotice(''), 5000);
+                          }}
+                        >
+                          Trigger Escalation Nudge
+                        </Button>
+                      )
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        leftIcon={<Bell className="w-3.5 h-3.5 text-amber-400" />}
-                        onClick={() => handleOpenNudgeModal(f)}
+                      <span
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-default select-none border ${
+                          statusInfo.variant === 'rose'
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                            : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                        }`}
                       >
-                        Trigger Escalation Nudge
-                      </Button>
+                        {statusInfo.variant === 'rose' ? (
+                          <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
+                        ) : (
+                          <Clock className="w-3.5 h-3.5 text-amber-400" />
+                        )}
+                        <span>{statusInfo.text}</span>
+                      </span>
                     )}
 
                     <Link href={`/quotations/${f.quotationId}`}>

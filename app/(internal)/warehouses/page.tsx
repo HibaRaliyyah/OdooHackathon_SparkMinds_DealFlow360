@@ -230,6 +230,37 @@ export default function WarehousesPage() {
     setShowAdjustModal(null);
   };
 
+  if (!authCheck.allowed) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200 max-w-2xl mx-auto py-12">
+        <BackButton href="/dashboard" label="Dashboard" />
+
+        <div className="card p-8 bg-[var(--bg-card)] border border-amber-500/30 text-center space-y-4 shadow-2xl">
+          <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/30 mx-auto flex items-center justify-center">
+            <Lock className="w-7 h-7" />
+          </div>
+          <div>
+            <h1 className="text-xl font-black text-white tracking-tight">Access Restricted — Warehouse & Inventory</h1>
+            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+              Physical depot management, stock level matrix, and inter-depot transfers are restricted exclusively to <strong>Finance / Operations</strong> and <strong>Admin</strong> logins.
+            </p>
+            <p className="text-xs text-amber-400 font-semibold mt-1">
+              Active Logged-in Role: {currentUser?.role || 'Sales Rep'}
+            </p>
+          </div>
+
+          <div className="pt-3 flex justify-center">
+            <Link href="/dashboard">
+              <Button variant="primary" size="md">
+                Return to Dashboard Console
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       {/* Top Navigation & Title */}

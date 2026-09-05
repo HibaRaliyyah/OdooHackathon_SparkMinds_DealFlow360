@@ -304,9 +304,9 @@ export function AdminDashboard() {
           </div>
 
           <div className="space-y-3">
-            {users.map((u) => (
+            {users.map((u, idx) => (
               <div
-                key={u.id}
+                key={`${u.id}-${idx}`}
                 className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 flex items-center justify-between"
               >
                 <div className="flex items-center gap-3">

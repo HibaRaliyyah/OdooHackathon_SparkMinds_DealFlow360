@@ -2,40 +2,52 @@
 
 import React from 'react';
 import { useStore } from '@/lib/data/store';
-import { RoleSwitcherBar } from '@/components/dashboard/RoleSwitcherBar';
-import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
-import { SalesManagerDashboard } from '@/components/dashboard/SalesManagerDashboard';
+import { ExecutiveDashboard } from '@/components/dashboard/ExecutiveDashboard';
 import { SalesRepDashboard } from '@/components/dashboard/SalesRepDashboard';
+import { SalesManagerDashboard } from '@/components/dashboard/SalesManagerDashboard';
 import { FinanceDashboard } from '@/components/dashboard/FinanceDashboard';
 import { CustomerDashboard } from '@/components/dashboard/CustomerDashboard';
 
 export default function DashboardPage() {
   const { currentUser } = useStore();
-  const currentRole = currentUser?.role || 'ADMIN';
+  const role = currentUser?.role;
 
-  const renderDashboardByRole = () => {
-    switch (currentRole) {
-      case 'ADMIN':
-        return <AdminDashboard />;
-      case 'SALES_MANAGER':
-        return <SalesManagerDashboard />;
-      case 'FINANCE':
-        return <FinanceDashboard />;
-      case 'CUSTOMER':
-        return <CustomerDashboard />;
-      case 'SALES_REP':
-      default:
-        return <SalesRepDashboard />;
-    }
-  };
+  if (role === 'SALES_REP') {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <SalesRepDashboard />
+      </div>
+    );
+  }
+
+  if (role === 'SALES_MANAGER') {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <SalesManagerDashboard />
+      </div>
+    );
+  }
+
+  if (role === 'FINANCE') {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <FinanceDashboard />
+      </div>
+    );
+  }
+
+  if (role === 'CUSTOMER') {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-300">
+        <CustomerDashboard />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Dynamic Role Switcher Bar for Seamless Official & Customer Testing */}
-      <RoleSwitcherBar />
-
-      {/* Role-Specific Official or Customer Dashboard */}
-      {renderDashboardByRole()}
+      {/* Enterprise Executive Management Dashboard */}
+      <ExecutiveDashboard />
     </div>
   );
 }

@@ -32,10 +32,15 @@ export default function CustomerQuotationPortalPage() {
   const [generalNotes, setGeneralNotes] = useState('We are ready to close today if we can get an 18% discount on line 2 (Setup).');
   const [submittedRequest, setSubmittedRequest] = useState(false);
   const [confirmedStatus, setConfirmedStatus] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   if (!quotation) {
     return <div className="p-8 text-center text-xs text-slate-400">No active quotation found.</div>;
   }
+
+  const isConfirmed = quotation.stage === 'Confirmed' || confirmedStatus === 'fulfillment';
+  const isNegotiationSubmitted = submittedRequest || quotation.stage === 'Negotiation';
+  const isSubmitDisabled = isNegotiationSubmitted || isConfirmed;
 
   const counterPrice = Math.round(totalDealVal * (1 - counterDiscount / 100));
   const evaluation = evaluateCounterOffer(quotation, quotation.items, counterPrice, generalNotes);
@@ -73,7 +78,7 @@ export default function CustomerQuotationPortalPage() {
     };
 
     addNegotiation(negReq);
-    updateQuotation(quotation.id, { stage: 'Pending Approval' });
+    updateQuotation(quotation.id, { stage: 'Negotiation' });
 
     if (evaluation.requiresReapproval) {
       addApprovalRequest({
@@ -95,70 +100,80 @@ export default function CustomerQuotationPortalPage() {
     addActivity({
       id: `act-${Date.now()}`,
       type: 'negotiation',
-      message: `${quotation.customerName} submitted counter proposal (${counterDiscount}% discount). System triggered automatic reapproval flow.`,
+      message: `${quotation.customerName} submitted counter proposal (${counterDiscount}% discount). Proposal transmitted to ${quotation.assignedTo || 'Sales Representative'}.`,
       relatedTo: quotation.id,
       timestamp: new Date().toISOString(),
     });
 
+    addNotification({
+      id: `notif-${Date.now()}`,
+      userId: 'user-customer',
+      title: 'Negotiation Submitted',
+      message: `Your counter proposal for ${quotation.quoteNumber} (${counterDiscount}% target discount) has been transmitted for review.`,
+      type: 'info',
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    fetch(`/api/customer/quotations/${quotation.id}/negotiate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestedDiscount: counterDiscount, notes: generalNotes }),
+    }).catch(() => {});
+
+    setConfirmedStatus(null);
     setSubmittedRequest(true);
   };
 
   const handleConfirmQuotation = () => {
-    // Check if current quotation discount exceeds threshold (15%)
-    const exceedsThreshold = counterDiscount > 15 || quotation.blendedRisk?.riskLevel === 'HIGH';
+    updateQuotation(quotation.id, { stage: 'Confirmed' });
+    setSubmittedRequest(false);
+    setConfirmedStatus('fulfillment');
 
-    if (exceedsThreshold) {
-      updateQuotation(quotation.id, { stage: 'Pending Approval' });
-      addApprovalRequest({
-        id: `appr-confirm-${Date.now()}`,
-        quotationId: quotation.id,
-        quotationNumber: quotation.quoteNumber,
-        customerId: quotation.customerId,
-        customerName: quotation.customerName,
-        stage: 'Sales Manager',
-        status: 'Pending',
-        riskLevel: 'HIGH',
-        riskScore: 82,
-        actions: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+    // Update matching invoice status to PAID upon customer payment & terms confirmation
+    const matchingInv = invoices.find(
+      (i) => i.quotationNumber === quotation.quoteNumber || i.customerName === quotation.customerName
+    );
+    if (matchingInv && matchingInv.status !== 'Paid') {
+      updateInvoice(matchingInv.id, {
+        status: 'Paid',
+        paidAmount: matchingInv.total,
+        payments: [
+          ...matchingInv.payments,
+          {
+            id: `pay-cust-${Date.now()}`,
+            invoiceId: matchingInv.id,
+            amount: matchingInv.total - matchingInv.paidAmount,
+            currency: 'USD',
+            paymentDate: new Date().toISOString().slice(0, 10),
+            method: matchingInv.type === 'Recurring' ? 'Credit Card' : 'Bank Transfer',
+            reference: `CUST-ONLINE-${Date.now()}`,
+            status: 'Confirmed',
+          },
+        ],
       });
-      setConfirmedStatus('reapproval');
-    } else {
-      updateQuotation(quotation.id, { stage: 'Confirmed' });
-      setConfirmedStatus('fulfillment');
-
-      // Update matching invoice status to PAID upon customer payment confirmation
-      const matchingInv = invoices.find(
-        (i) => i.quotationNumber === quotation.quoteNumber || i.customerName === quotation.customerName
-      );
-      if (matchingInv && matchingInv.status !== 'Paid') {
-        updateInvoice(matchingInv.id, {
-          status: 'Paid',
-          paidAmount: matchingInv.total,
-          payments: [
-            ...matchingInv.payments,
-            {
-              id: `pay-cust-${Date.now()}`,
-              invoiceId: matchingInv.id,
-              amount: matchingInv.total - matchingInv.paidAmount,
-              currency: 'USD',
-              paymentDate: new Date().toISOString().slice(0, 10),
-              method: matchingInv.type === 'Recurring' ? 'Credit Card' : 'Bank Transfer',
-              reference: `CUST-ONLINE-${Date.now()}`,
-              status: 'Confirmed',
-            },
-          ],
-        });
-      }
     }
+
+    addNotification({
+      id: `notif-${Date.now()}`,
+      userId: 'user-customer',
+      title: 'Quotation Terms Confirmed',
+      message: `Quotation ${quotation.quoteNumber} terms have been confirmed. Order fulfillment initialized.`,
+      type: 'success',
+      read: false,
+      createdAt: new Date().toISOString(),
+    });
+
+    fetch(`/api/customer/quotations/${quotation.id}/accept`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmedAt: new Date().toISOString() }),
+    }).catch(() => {});
 
     addActivity({
       id: `act-${Date.now()}`,
       type: 'negotiation',
-      message: `${quotation.customerName} submitted online payment & confirmed quotation. ${
-        exceedsThreshold ? 'Re-entered approval flow (B4) due to discount threshold breach.' : 'Moved to fulfillment and invoice status updated to PAID.'
-      }`,
+      message: `${quotation.customerName} confirmed quotation final terms. Moved directly to warehouse fulfillment and invoice status updated to PAID.`,
       relatedTo: quotation.id,
       timestamp: new Date().toISOString(),
     });
@@ -171,8 +186,8 @@ export default function CustomerQuotationPortalPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <span className="font-mono text-xl font-extrabold text-white">{quotation.quoteNumber}</span>
-            <Badge variant={quotation.stage === 'Confirmed' ? 'success' : quotation.stage === 'Pending Approval' ? 'warning' : 'info'}>
-              Status: {quotation.stage === 'Confirmed' ? 'Confirmed' : submittedRequest ? 'Under Negotiation' : 'Sent'}
+            <Badge variant={quotation.stage === 'Confirmed' ? 'success' : quotation.stage === 'Pending Approval' || submittedRequest ? 'warning' : 'info'}>
+              Status: {quotation.stage === 'Confirmed' ? 'Confirmed' : submittedRequest ? 'Under Negotiation' : quotation.stage}
             </Badge>
           </div>
           <p className="text-xs text-slate-400 mt-1">Acme Corp Client Portal — Official Proposal</p>
@@ -185,18 +200,32 @@ export default function CustomerQuotationPortalPage() {
           </div>
           <Button
             size="md"
-            variant="primary"
-            onClick={handleConfirmQuotation}
-            leftIcon={<Check className="w-4 h-4" />}
+            variant={isConfirmed ? 'success' : 'primary'}
+            disabled={isConfirmed}
+            onClick={() => (isConfirmed ? null : setShowConfirmModal(true))}
+            leftIcon={isConfirmed ? <CheckCircle2 className="w-4 h-4 text-white" /> : <Check className="w-4 h-4" />}
           >
-            Confirm Quotation
+            {isConfirmed ? 'Quotation Confirmed' : 'Confirm Quotation'}
           </Button>
         </div>
       </div>
 
+      {/* Submitted Request Outcome Alert */}
+      {submittedRequest && (
+        <div className="p-5 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-semibold flex items-center gap-3 shadow-lg animate-in fade-in duration-200">
+          <CheckCircle2 className="w-6 h-6 text-cyan-400 shrink-0" />
+          <div>
+            <h4 className="font-bold text-white text-sm">Negotiation Request Successfully Submitted!</h4>
+            <p className="text-slate-300 mt-0.5">
+              Your counter proposal of {counterDiscount}% target discount and notes have been transmitted to your account manager ({quotation.assignedTo || 'Sales Representative'}) for review.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Confirmation Outcome Alert */}
       {confirmedStatus === 'reapproval' && (
-        <div className="p-5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-3 shadow-lg">
+        <div className="p-5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-3 shadow-lg animate-in fade-in duration-200">
           <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0" />
           <div>
             <h4 className="font-bold text-white text-sm">Terms Exceed Standard Discount Ceiling (Automatic Reapproval Triggered)</h4>
@@ -208,7 +237,7 @@ export default function CustomerQuotationPortalPage() {
       )}
 
       {confirmedStatus === 'fulfillment' && (
-        <div className="p-5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-3 shadow-lg">
+        <div className="p-5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-3 shadow-lg animate-in fade-in duration-200">
           <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
           <div>
             <h4 className="font-bold text-white text-sm">Quotation Officially Confirmed!</h4>
@@ -219,39 +248,59 @@ export default function CustomerQuotationPortalPage() {
         </div>
       )}
 
-      {/* Line Items with Line-Level Question & Comment Tool */}
-      <div className="card p-6 bg-[var(--bg-card)] border border-slate-800 space-y-4">
-        <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-          <Package className="w-4 h-4 text-indigo-400" /> Line-Level Negotiation & Change Request Tool
+      {/* Official Sales Representative Confirmation Card */}
+      <div className="card p-6 bg-emerald-500/10 border-2 border-emerald-500/30 rounded-2xl space-y-3 shadow-xl animate-in fade-in duration-200">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            </div>
+            <div>
+              <h4 className="text-base font-extrabold text-[var(--text-primary)]">
+                Official Confirmation from Sales Representative ({quotation.assignedTo || 'Jasmine Rao'})
+              </h4>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                Confirmed & Verified Proposal for Quote <strong className="font-mono text-emerald-400">{quotation.quoteNumber}</strong>
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+            Sales Rep Verified ✓
+          </span>
+        </div>
+        <div className="p-4 rounded-xl bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] space-y-1">
+          <p className="font-semibold text-emerald-400 flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" /> Terms Approved & Formally Validated
+          </p>
+          <p className="text-[var(--text-secondary)] leading-relaxed">
+            "Your quotation terms, item quantities, and commercial pricing have been formally approved by your assigned Sales Representative (<strong>{quotation.assignedTo || 'Jasmine Rao'}</strong>). Your proposal is ready for final customer confirmation and immediate order allocation."
+          </p>
+        </div>
+      </div>
+
+
+      {/* Line Items Overview */}
+      <div className="card p-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] space-y-4">
+        <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+          <Package className="w-4 h-4 text-indigo-400" /> Quotation Line Items & Specifications
         </h3>
-        <p className="text-xs text-slate-400">
-          Inspect order lines, ask line-level questions, or suggest adjustments on individual products.
+        <p className="text-xs text-[var(--text-secondary)]">
+          Inspect order lines, unit pricing, discounts, and product allocations.
         </p>
 
         <div className="space-y-3 pt-2">
           {quotation.items.map((item) => (
-            <div key={item.id} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
+            <div key={item.id} className="p-4 rounded-xl bg-[var(--bg-card-hover)] border border-[var(--border-subtle)] space-y-2 text-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <span className="font-bold text-white text-sm">{item.productName}</span>
-                  <div className="text-[11px] text-slate-400">
+                  <span className="font-bold text-[var(--text-primary)] text-sm">{item.productName}</span>
+                  <div className="text-[11px] text-[var(--text-secondary)]">
                     Qty: {item.quantity} · Unit Price: ${item.unitPrice.toLocaleString()} · Discount: {item.discount}%
                   </div>
                 </div>
                 <span className="font-mono font-bold text-emerald-400 text-sm">
                   ${(item.lineTotal || item.unitPrice * item.quantity).toLocaleString()}
                 </span>
-              </div>
-
-              {/* Line Comment Input */}
-              <div className="pt-2 border-t border-slate-800">
-                <input
-                  type="text"
-                  placeholder={`Ask a question or request quantity/discount change for ${item.productName}...`}
-                  value={lineComments[item.id] || ''}
-                  onChange={(e) => setLineComments({ ...lineComments, [item.id]: e.target.value })}
-                  className="w-full bg-[#141b2b] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                />
               </div>
             </div>
           ))}
@@ -276,9 +325,10 @@ export default function CustomerQuotationPortalPage() {
                   type="number"
                   min="0"
                   max="50"
+                  disabled={isSubmitDisabled}
                   value={counterDiscount}
                   onChange={(e) => setCounterDiscount(parseInt(e.target.value) || 0)}
-                  className="w-32 bg-[#141b2b] border border-slate-700/60 rounded-xl px-4 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-cyan-500"
+                  className="w-32 bg-[#141b2b] border border-slate-700/60 rounded-xl px-4 py-2 text-xs font-mono font-bold text-white focus:outline-none focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <span className="text-xs text-slate-400">
                   Target Deal Total: <strong className="text-emerald-400 font-mono">${counterPrice.toLocaleString()}</strong>
@@ -292,9 +342,10 @@ export default function CustomerQuotationPortalPage() {
               </label>
               <textarea
                 rows={2}
+                disabled={isSubmitDisabled}
                 value={generalNotes}
                 onChange={(e) => setGeneralNotes(e.target.value)}
-                className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
+                className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -304,22 +355,68 @@ export default function CustomerQuotationPortalPage() {
               type="submit"
               variant="outline"
               size="md"
-              leftIcon={<MessageSquare className="w-4 h-4 text-cyan-400" />}
+              disabled={isSubmitDisabled}
+              leftIcon={
+                isNegotiationSubmitted ? (
+                  <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+                ) : (
+                  <MessageSquare className="w-4 h-4 text-cyan-400" />
+                )
+              }
             >
-              Submit Negotiation Request
+              {isNegotiationSubmitted ? 'Negotiation Submitted ✓' : 'Submit Negotiation Request'}
             </Button>
             <Button
               type="button"
-              variant="primary"
+              variant={isConfirmed ? 'success' : 'primary'}
               size="md"
-              onClick={handleConfirmQuotation}
-              leftIcon={<Check className="w-4 h-4" />}
+              disabled={isConfirmed}
+              onClick={() => (isConfirmed ? null : setShowConfirmModal(true))}
+              leftIcon={isConfirmed ? <CheckCircle2 className="w-4 h-4 text-white" /> : <Check className="w-4 h-4" />}
             >
-              Confirm Quotation Final Terms
+              {isConfirmed ? 'Terms Confirmed ✓' : 'Confirm Quotation Final Terms'}
             </Button>
           </div>
         </form>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-[var(--text-primary)]">Confirm Quotation {quotation.quoteNumber}?</h3>
+                <p className="text-xs text-[var(--text-secondary)]">Acme Corp Client Portal — Official Approval</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+              By confirming this quotation, you formally accept all quoted items, pricing, discounts, and payment terms. Order fulfillment and warehouse allocation will be initialized immediately.
+            </p>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setShowConfirmModal(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  handleConfirmQuotation();
+                  setShowConfirmModal(false);
+                }}
+                leftIcon={<Check className="w-4 h-4" />}
+              >
+                Confirm & Accept Terms
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
