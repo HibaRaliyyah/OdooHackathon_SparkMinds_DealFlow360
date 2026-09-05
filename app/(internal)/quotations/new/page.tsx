@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 export default function NewQuotationPage() {
   const router = useRouter();
-  const { customers, products, productCategories, addQuotation, addApprovalRequest, currentUser } = useStore();
+  const { customers, products, productCategories, addQuotation, updateQuotation, addApprovalRequest, addActivity, currentUser } = useStore();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(customers[0]?.id || '');
   const [items, setItems] = useState<QuotationItem[]>([]);
@@ -96,21 +96,66 @@ export default function NewQuotationPage() {
     addQuotation(newQuotation);
 
     if (stage === 'Pending Approval') {
-      const approvalReq = {
-        id: `appr-${qId}`,
-        quotationId: qId,
-        quotationNumber: qNum,
-        customerId: currentCustomer.id,
-        customerName: currentCustomer.company || 'Customer',
-        stage: 'Sales Manager' as const,
-        status: 'Pending' as const,
-        riskLevel: blendedRisk.riskLevel,
-        riskScore: blendedRisk.riskScore,
-        actions: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      addApprovalRequest(approvalReq);
+      // LOW risk with discounts within allowed limits → auto-approve
+      const isAutoApproved = blendedRisk.riskLevel === 'LOW' && !blendedRisk.requiresApproval;
+
+      if (isAutoApproved) {
+        // Directly approve — skip Sales Manager & Finance stages
+        updateQuotation(qId, { stage: 'Approved' });
+
+        const autoApprovalAction = {
+          id: `act-${Date.now()}`,
+          approvalRequestId: `appr-${qId}`,
+          userId: 'system',
+          userName: 'System Auto-Approval',
+          userRole: 'ADMIN' as const,
+          action: 'Auto-Approved' as const,
+          comment: `Auto-approved: LOW risk (score ${blendedRisk.riskScore}/100). All discounts are within the allowed subscription plan and product category ceilings.`,
+          timestamp: new Date().toISOString(),
+        };
+
+        const approvalReq = {
+          id: `appr-${qId}`,
+          quotationId: qId,
+          quotationNumber: qNum,
+          customerId: currentCustomer.id,
+          customerName: currentCustomer.company || 'Customer',
+          stage: 'Auto-Approved' as const,
+          status: 'Auto-Approved' as const,
+          riskLevel: blendedRisk.riskLevel,
+          riskScore: blendedRisk.riskScore,
+          actions: [autoApprovalAction],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        addApprovalRequest(approvalReq);
+
+        addActivity({
+          id: `act-auto-${Date.now()}`,
+          message: `${qNum} auto-approved — LOW risk (score ${blendedRisk.riskScore}/100). Discounts within subscription plan & category ceilings.`,
+          type: 'approval',
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        // MEDIUM/HIGH risk → route through multi-stage approval
+        const initialStage = blendedRisk.riskLevel === 'HIGH' ? 'Sales Manager' as const : 'Sales Manager' as const;
+
+        const approvalReq = {
+          id: `appr-${qId}`,
+          quotationId: qId,
+          quotationNumber: qNum,
+          customerId: currentCustomer.id,
+          customerName: currentCustomer.company || 'Customer',
+          stage: initialStage,
+          status: 'Pending' as const,
+          riskLevel: blendedRisk.riskLevel,
+          riskScore: blendedRisk.riskScore,
+          actions: [],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        addApprovalRequest(approvalReq);
+      }
     }
 
     router.push(`/quotations/${qId}`);

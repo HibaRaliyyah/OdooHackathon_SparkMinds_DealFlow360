@@ -33,7 +33,7 @@ export function ApprovalTimeline({ approvalRequest }: ApprovalTimelineProps) {
         </div>
         <Badge
           variant={
-            approvalRequest.status === 'Approved'
+            approvalRequest.status === 'Approved' || approvalRequest.status === 'Auto-Approved'
               ? 'success'
               : approvalRequest.status === 'Rejected'
               ? 'danger'
@@ -45,7 +45,35 @@ export function ApprovalTimeline({ approvalRequest }: ApprovalTimelineProps) {
         </Badge>
       </div>
 
-      {/* Stage Stepper Progress */}
+      {/* Auto-Approved Banner */}
+      {approvalRequest.stage === 'Auto-Approved' ? (
+        <div className="mb-8">
+          <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-emerald-400">Auto-Approved — No Manual Review Required</div>
+              <p className="text-[11px] text-emerald-300/70 mt-0.5">
+                LOW risk quotation with all discounts within the allowed subscription plan and product category ceilings.
+                Bypassed Sales Manager & Finance approval stages.
+              </p>
+            </div>
+          </div>
+
+          {/* Single step completed indicator */}
+          <div className="flex items-center justify-center mt-6">
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-9 h-9 rounded-full border-2 bg-emerald-500 text-white border-emerald-400 flex items-center justify-center font-bold text-xs">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-semibold text-[var(--text-primary)] mt-2">Auto-Approved</span>
+              <span className="text-[10px] text-emerald-400">System Decision</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+      /* Stage Stepper Progress */
       <div className="flex items-center justify-between mb-8 relative">
         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[var(--border-subtle)] -translate-y-1/2 z-0" />
 
@@ -78,6 +106,7 @@ export function ApprovalTimeline({ approvalRequest }: ApprovalTimelineProps) {
           );
         })}
       </div>
+      )}
 
       {/* Audit Action Log */}
       <div className="space-y-3 pt-4 border-t border-[var(--border-subtle)]">

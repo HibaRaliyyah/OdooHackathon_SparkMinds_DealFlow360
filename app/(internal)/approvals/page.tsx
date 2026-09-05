@@ -273,7 +273,7 @@ export default function ApprovalsPage() {
             },
             {
               header: 'Final Status',
-              cell: (r) => <Badge variant={r.status === 'Approved' ? 'success' : 'danger'}>{r.status}</Badge>,
+              cell: (r) => <Badge variant={r.status === 'Approved' || r.status === 'Auto-Approved' ? 'success' : 'danger'}>{r.status}</Badge>,
             },
             {
               header: 'Audit Trail Entries',
