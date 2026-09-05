@@ -3,6 +3,7 @@
 import React from 'react';
 import { useStore } from '@/lib/data/store';
 import { InvoiceCard } from '@/components/customer/InvoiceCard';
+import { downloadInvoicePDF, downloadInvoiceXLS } from '@/lib/utils/documentExporter';
 import { Receipt, CreditCard, DollarSign } from 'lucide-react';
 
 export default function CustomerInvoicesPage() {
@@ -11,11 +12,16 @@ export default function CustomerInvoicesPage() {
   const customerInvoices = invoices.length > 0 ? invoices : [
     {
       id: 'inv-1001',
+      invoiceNumber: 'INV-1001',
       quotationId: 'quot-1042',
       quotationNumber: 'Q-1042',
       customerId: 'cust-1',
       customerName: 'Acme Corp',
       amount: 3036.35,
+      total: 3036.35,
+      subtotal: 2800.00,
+      tax: 236.35,
+      discount: 0,
       paidAmount: 3036.35,
       dueAmount: 0,
       status: 'Paid' as const,
@@ -24,14 +30,23 @@ export default function CustomerInvoicesPage() {
       invoiceDate: '2026-08-25',
       dueDate: '2026-09-25',
       createdAt: '2026-08-25T14:00:00Z',
+      type: 'One-Time' as const,
+      items: [
+        { productName: 'High-Density Wireless AP', billedQty: 10, unitPrice: 280, discount: 0, taxPercent: 8, lineTotal: 2800 },
+      ],
     },
     {
       id: 'inv-1002',
+      invoiceNumber: 'INV-1002',
       quotationId: 'quot-1039',
       quotationNumber: 'Q-1039',
       customerId: 'cust-1',
       customerName: 'Acme Corp',
       amount: 8496.0,
+      total: 8496.0,
+      subtotal: 8000.00,
+      tax: 496.00,
+      discount: 0,
       paidAmount: 0,
       dueAmount: 8496.0,
       status: 'Pending' as const,
@@ -40,6 +55,10 @@ export default function CustomerInvoicesPage() {
       invoiceDate: '2026-09-01',
       dueDate: '2026-10-01',
       createdAt: '2026-09-01T10:00:00Z',
+      type: 'Recurring' as const,
+      items: [
+        { productName: 'Managed Security Operations Center (Monthly)', billedQty: 1, unitPrice: 8000, discount: 0, taxPercent: 6.2, lineTotal: 8000 },
+      ],
     },
   ];
 
@@ -54,7 +73,7 @@ export default function CustomerInvoicesPage() {
         </div>
         <h1 className="text-2xl font-black text-white tracking-tight">Your Invoices & Payments</h1>
         <p className="text-xs text-slate-400 mt-1">
-          View generated billing statements, check payment due dates, and complete secure payments.
+          View generated billing statements, check payment due dates, and download official PDF/XLS document statements.
         </p>
       </div>
 
@@ -69,6 +88,8 @@ export default function CustomerInvoicesPage() {
             dueDate={inv.dueDate || '2026-10-01'}
             amount={inv.total || inv.amount || 0}
             status={inv.status}
+            onDownloadPDF={() => downloadInvoicePDF(inv)}
+            onDownloadXLS={() => downloadInvoiceXLS(inv)}
           />
         ))}
       </div>

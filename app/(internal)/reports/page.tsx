@@ -17,6 +17,7 @@ import {
   FileSearch,
 } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
+import { downloadReportPDF, downloadReportXLS } from '@/lib/utils/documentExporter';
 import {
   ResponsiveContainer,
   BarChart,
@@ -231,11 +232,32 @@ export default function ReportsPage() {
   };
 
   const handleExport = (format: 'PDF' | 'XLS') => {
-    setExportNotice(`Exporting filtered report (${filteredQuotations.length} records) as ${format}...`);
-    setTimeout(() => {
-      setExportNotice(`Sales_Performance_Report_${new Date().toISOString().slice(0, 10)}.${format.toLowerCase()} generated!`);
-      setTimeout(() => setExportNotice(''), 4000);
-    }, 600);
+    const filename = `Sales_Performance_Report_${new Date().toISOString().slice(0, 10)}`;
+    const headers = ['Quote Number', 'Customer Name', 'Sales Rep', 'Stage', 'Risk Score', 'Total Value ($)', 'Created Date'];
+    const rows = filteredQuotations.map((q) => [
+      q.quoteNumber || '',
+      q.customerName || '',
+      q.assignedTo || '',
+      q.stage || '',
+      `${q.blendedRisk?.riskScore || 0}/100`,
+      `$${((q.oneTimeTotal || 0) + (q.recurringTotal || 0)).toLocaleString()}`,
+      q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '',
+    ]);
+
+    if (format === 'XLS') {
+      downloadReportXLS('Executive Sales Report', headers, rows, filename);
+      setExportNotice(`Successfully exported ${filteredQuotations.length} records to ${filename}.csv!`);
+      setTimeout(() => setExportNotice(''), 5000);
+    } else {
+      const kpis = [
+        { label: 'Total Pipeline Volume', value: `$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+        { label: 'Avg Blended Risk Score', value: `${avgRisk.toFixed(1)}/100` },
+        { label: 'Approved Deals', value: `${approvedCount}` },
+      ];
+      downloadReportPDF('Executive Sales Report', kpis, headers, rows, filename);
+      setExportNotice(`Generated printable PDF document for ${filteredQuotations.length} records!`);
+      setTimeout(() => setExportNotice(''), 5000);
+    }
   };
 
   return (

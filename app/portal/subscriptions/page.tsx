@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Download,
 } from 'lucide-react';
+import { downloadContractPDF } from '@/lib/utils/documentExporter';
 
 export default function SubscriptionsPage() {
   const currentCustomer = useDealFlowStore((state) => state.currentCustomer);
@@ -130,7 +131,10 @@ export default function SubscriptionsPage() {
 
             {/* Actions */}
             <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-              <button className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 border border-white/10 transition-colors flex items-center gap-1.5">
+              <button
+                onClick={() => downloadContractPDF(sub)}
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 border border-white/10 transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
                 <Download className="w-3.5 h-3.5" /> Download Contract PDF
               </button>
               <button className="px-4 py-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-xs font-semibold text-sky-400 border border-sky-500/30 transition-colors flex items-center gap-1.5">

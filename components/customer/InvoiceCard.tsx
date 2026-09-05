@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import styles from './InvoiceCard.module.css';
-import { CreditCard, CheckCircle2 } from 'lucide-react';
+import { CreditCard, CheckCircle2, Download, FileSpreadsheet } from 'lucide-react';
 
 interface InvoiceCardProps {
   invoiceNumber: string;
@@ -13,6 +13,8 @@ interface InvoiceCardProps {
   currency?: string;
   status: string;
   onPay?: () => void;
+  onDownloadPDF?: () => void;
+  onDownloadXLS?: () => void;
 }
 
 export function InvoiceCard({
@@ -24,6 +26,8 @@ export function InvoiceCard({
   currency = '$',
   status,
   onPay,
+  onDownloadPDF,
+  onDownloadXLS,
 }: InvoiceCardProps) {
   const [isPaying, setIsPaying] = useState(false);
   const [isPaid, setIsPaid] = useState(status === 'Paid');
@@ -74,17 +78,42 @@ export function InvoiceCard({
         </div>
       </div>
 
-      <div className={styles.actions}>
-        {!isPaid ? (
-          <button onClick={handlePayClick} disabled={isPaying} className={styles.payBtn}>
-            <CreditCard className="w-3.5 h-3.5 inline mr-1" />
-            {isPaying ? 'Processing...' : 'Pay Invoice'}
-          </button>
-        ) : (
-          <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Payment Complete
-          </span>
-        )}
+      <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-white/5">
+        <div className="flex items-center gap-1.5">
+          {onDownloadPDF && (
+            <button
+              onClick={onDownloadPDF}
+              title="Download PDF Invoice"
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-400" />
+              <span>PDF</span>
+            </button>
+          )}
+          {onDownloadXLS && (
+            <button
+              onClick={onDownloadXLS}
+              title="Download XLS Spreadsheet"
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors text-xs font-semibold flex items-center gap-1 cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <span>XLS</span>
+            </button>
+          )}
+        </div>
+
+        <div className={styles.actions}>
+          {!isPaid ? (
+            <button onClick={handlePayClick} disabled={isPaying} className={styles.payBtn}>
+              <CreditCard className="w-3.5 h-3.5 inline mr-1" />
+              {isPaying ? 'Processing...' : 'Pay Invoice'}
+            </button>
+          ) : (
+            <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Payment Complete
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -16,10 +16,13 @@ import {
   Boxes,
   Building,
   Truck,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import Link from 'next/link';
 import type { FulfillmentOrder } from '@/lib/types';
 import { canApproveQuotation } from '@/lib/services/permissionService';
+import { downloadQuotationPDF, downloadQuotationXLS } from '@/lib/utils/documentExporter';
 
 export default function QuotationDetailPage() {
   const params = useParams();
@@ -157,7 +160,23 @@ export default function QuotationDetailPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            size="md"
+            variant="outline"
+            onClick={() => downloadQuotationPDF(quotation)}
+            leftIcon={<Download className="w-4 h-4 text-indigo-400" />}
+          >
+            Download PDF
+          </Button>
+          <Button
+            size="md"
+            variant="outline"
+            onClick={() => downloadQuotationXLS(quotation)}
+            leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-400" />}
+          >
+            Download XLS
+          </Button>
           {quotation.stage === 'Pending Approval' && (
             authCheck.allowed ? (
               <>

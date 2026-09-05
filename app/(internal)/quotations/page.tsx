@@ -7,8 +7,9 @@ import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
-import { Plus, Search, LayoutGrid, ListFilter, ArrowRight, Edit2, CheckCircle2 } from 'lucide-react';
+import { Plus, Search, LayoutGrid, ListFilter, ArrowRight, Edit2, CheckCircle2, Download, FileSpreadsheet } from 'lucide-react';
 import type { QuotationStage, Quotation } from '@/lib/types';
+import { downloadQuotationPDF, downloadQuotationXLS } from '@/lib/utils/documentExporter';
 
 export default function QuotationsListPage() {
   const { quotations, currentUser, updateQuotation, addActivity } = useStore();
@@ -198,6 +199,28 @@ export default function QuotationsListPage() {
                 header: 'Actions',
                 cell: (q) => (
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        downloadQuotationPDF(q);
+                      }}
+                      title="Download PDF Proposal"
+                      className="p-1.5 rounded-lg bg-[var(--bg-card-hover)] hover:bg-white/10 text-indigo-400 border border-[var(--border-subtle)] transition-colors cursor-pointer"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        downloadQuotationXLS(q);
+                      }}
+                      title="Download XLS Spreadsheet"
+                      className="p-1.5 rounded-lg bg-[var(--bg-card-hover)] hover:bg-white/10 text-emerald-400 border border-[var(--border-subtle)] transition-colors cursor-pointer"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5" />
+                    </button>
                     <Link href={`/quotations/${q.id}`}>
                       <Button size="sm" variant="outline" rightIcon={<ArrowRight className="w-3 h-3" />}>
                         View

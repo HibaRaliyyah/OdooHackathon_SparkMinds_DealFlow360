@@ -15,7 +15,10 @@ import {
   Sliders,
   DollarSign,
   Package,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { downloadQuotationPDF, downloadQuotationXLS } from '@/lib/utils/documentExporter';
 
 export default function CustomerQuotationPortalPage() {
   const { currentUser, customers, quotations, invoices, updateInvoice, addNegotiation, updateQuotation, addApprovalRequest, addActivity, addNotification } = useStore();
@@ -193,8 +196,25 @@ export default function CustomerQuotationPortalPage() {
           <p className="text-xs text-slate-400 mt-1">Acme Corp Client Portal — Official Proposal</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-right font-mono">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            size="md"
+            variant="outline"
+            onClick={() => downloadQuotationPDF(quotation)}
+            leftIcon={<Download className="w-4 h-4 text-indigo-400" />}
+          >
+            Download PDF
+          </Button>
+          <Button
+            size="md"
+            variant="outline"
+            onClick={() => downloadQuotationXLS(quotation)}
+            leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-400" />}
+          >
+            Download XLS
+          </Button>
+
+          <div className="text-right font-mono px-2">
             <span className="text-xs text-slate-400">Total Quoted Value</span>
             <div className="text-2xl font-black text-emerald-400">${totalDealVal.toLocaleString()}</div>
           </div>
