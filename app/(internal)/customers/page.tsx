@@ -4,17 +4,21 @@ import React from 'react';
 import { useStore } from '@/lib/data/store';
 import { Table } from '@/components/ui/Table';
 import { Building } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function CustomersPage() {
   const { customers, tierPolicies } = useStore();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      <div>
-        <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Customer Directory & Tier Policies</h1>
-        <p className="text-xs text-[var(--text-tertiary)] mt-1">
-          Account tiering (Bronze, Silver, Gold, Platinum), payment terms, and discount ceilings
-        </p>
+      <div className="flex items-center gap-3">
+        <BackButton />
+        <div>
+          <h1 className="text-2xl font-black text-white tracking-tight">Customer Directory & Tier Policies</h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Account tiering (Bronze, Silver, Gold, Platinum), payment terms, and discount ceilings
+          </p>
+        </div>
       </div>
 
       <div className="card p-6 bg-[var(--bg-card)]">
@@ -30,8 +34,8 @@ export default function CustomersPage() {
                     <Building className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="font-bold text-[var(--text-primary)]">{c.company}</div>
-                    <div className="text-[10px] text-[var(--text-tertiary)]">{c.contact} ({c.email})</div>
+                    <div className="font-bold text-white">{c.company}</div>
+                    <div className="text-[10px] text-slate-400">{c.contact} ({c.email})</div>
                   </div>
                 </div>
               ),
@@ -57,7 +61,7 @@ export default function CustomersPage() {
             },
             {
               header: 'Payment Terms',
-              cell: (c) => <span className="font-mono text-xs text-[var(--text-secondary)]">{c.paymentTerms}</span>,
+              cell: (c) => <span className="font-mono text-xs text-slate-400">{c.paymentTerms}</span>,
             },
           ]}
         />

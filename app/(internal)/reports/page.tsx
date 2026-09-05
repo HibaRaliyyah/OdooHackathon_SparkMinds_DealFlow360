@@ -17,6 +17,7 @@ import {
   PieChart as PieChartIcon,
   Percent,
 } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 import {
   ResponsiveContainer,
   BarChart,
@@ -58,10 +59,13 @@ export default function ReportsPage() {
       {/* Top Header with Export Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              A7 Reporting & Analytics Hub
-            </span>
+          <div className="flex items-center gap-3 mb-2">
+            <BackButton href="/dashboard" label="Dashboard" />
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                A7 Reporting & Analytics Hub
+              </span>
+            </div>
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight mt-1.5">
             Executive Sales Performance & Governance Reports

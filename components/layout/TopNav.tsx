@@ -12,9 +12,11 @@ import {
   FileText,
   LayoutGrid,
   CheckCircle2,
+  ArrowLeft,
 } from 'lucide-react';
 import { useStore } from '@/lib/data/store';
 import { NotificationsPanel } from './NotificationsPanel';
+import { BackButton } from '@/components/ui/BackButton';
 
 export function TopNav() {
   const router = useRouter();
@@ -37,9 +39,12 @@ export function TopNav() {
   };
 
   return (
-    <header className="h-16 bg-[var(--bg-card)]/90 border-b border-[var(--border-subtle)] px-6 lg:px-8 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl">
-      {/* Left: Top Workspace Navigation Links (B1) */}
-      <div className="flex items-center gap-4">
+    <header className="h-16 bg-[var(--bg-card)]/90 border-b border-[var(--border-subtle)] px-4 lg:px-8 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl">
+      {/* Left: Global Back Button & Top Workspace Navigation Links (B1) */}
+      <div className="flex items-center gap-3">
+        {/* Global TopNav Back Button */}
+        <BackButton label="Back" />
+
         {/* Workspace Quick Links */}
         <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
           <Link
@@ -67,7 +72,7 @@ export function TopNav() {
         </div>
 
         {/* Global Search */}
-        <div className="hidden md:flex items-center relative w-64 lg:w-80">
+        <div className="hidden md:flex items-center relative w-56 lg:w-72">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"

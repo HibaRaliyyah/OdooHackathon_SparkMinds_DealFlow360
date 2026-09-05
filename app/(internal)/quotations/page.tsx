@@ -6,6 +6,7 @@ import { useStore } from '@/lib/data/store';
 import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
 import { Plus, Search, LayoutGrid, ListFilter, ArrowRight } from 'lucide-react';
 import type { QuotationStage } from '@/lib/types';
 
@@ -31,11 +32,14 @@ export default function QuotationsListPage() {
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-3">
+          <BackButton href="/dashboard" label="Dashboard" />
+          <div>
           <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Quotations & Deal Lifecycle</h1>
           <p className="text-xs text-[var(--text-tertiary)] mt-1">
             Manage quotes, line discounts, blended risk scores, and customer approvals
           </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

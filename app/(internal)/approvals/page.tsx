@@ -6,6 +6,7 @@ import { useStore } from '@/lib/data/store';
 import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { BackButton } from '@/components/ui/BackButton';
 import {
   ArrowRight,
   ShieldAlert,
@@ -83,10 +84,13 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       <div>
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
-            B4 Discount Approvals Hub
-          </span>
+        <div className="flex items-center gap-3 mb-2">
+          <BackButton href="/dashboard" label="Dashboard" />
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              B4 Discount Approvals Hub
+            </span>
+          </div>
         </div>
         <h1 className="text-2xl font-black text-white tracking-tight mt-1.5">
           Multi-Stage Discount Approval & Audit Confirmation

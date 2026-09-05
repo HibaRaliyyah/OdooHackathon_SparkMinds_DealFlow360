@@ -4,17 +4,21 @@ import React from 'react';
 import { useStore } from '@/lib/data/store';
 import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function InvoicesPage() {
   const { invoices } = useStore();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      <div>
-        <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Invoice Operations & Partial Invoicing</h1>
-        <p className="text-xs text-[var(--text-tertiary)] mt-1">
-          Track partial shipments, final invoices, payment status, and due dates
-        </p>
+      <div className="flex items-center gap-3">
+        <BackButton href="/dashboard" label="Dashboard" />
+        <div>
+          <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Invoice Operations & Partial Invoicing</h1>
+          <p className="text-xs text-[var(--text-tertiary)] mt-1">
+            Track partial shipments, final invoices, payment status, and due dates
+          </p>
+        </div>
       </div>
 
       <div className="card p-6 bg-[var(--bg-card)]">

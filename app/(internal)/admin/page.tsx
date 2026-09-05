@@ -28,6 +28,7 @@ import {
   FileSpreadsheet,
   FileText,
 } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function AdminBackendPage() {
   const {
@@ -66,6 +67,11 @@ export default function AdminBackendPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Back Navigation */}
+      <div className="flex items-center gap-3">
+        <BackButton href="/dashboard" label="Dashboard" />
+      </div>
+
       {/* Backend Configuration Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-8 rounded-3xl border border-indigo-500/20 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">

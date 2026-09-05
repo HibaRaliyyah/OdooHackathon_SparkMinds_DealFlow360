@@ -17,6 +17,7 @@ import {
   Bell,
   AlertOctagon,
 } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function DealHealthPage() {
   const { dealHealthFlags, quotations, addActivity, addNotification } = useStore();
@@ -53,10 +54,13 @@ export default function DealHealthPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       <div>
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
-            B9 Deal Health Telemetry
-          </span>
+        <div className="flex items-center gap-3 mb-2">
+          <BackButton href="/dashboard" label="Dashboard" />
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              B9 Deal Health Telemetry
+            </span>
+          </div>
         </div>
         <h1 className="text-2xl font-black text-white tracking-tight mt-1.5">
           Deal Health & Anomaly Detection Dashboard

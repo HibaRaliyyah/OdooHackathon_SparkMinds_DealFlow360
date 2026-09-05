@@ -5,17 +5,21 @@ import { useStore } from '@/lib/data/store';
 import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Package } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function ProductsPage() {
   const { products, productCategories } = useStore();
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      <div>
-        <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Product Catalog & Pricelists</h1>
-        <p className="text-xs text-[var(--text-tertiary)] mt-1">
-          Catalog products, SKUs, category discount ceilings, and list price definitions
-        </p>
+      <div className="flex items-center gap-3">
+        <BackButton href="/dashboard" label="Dashboard" />
+        <div>
+          <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">Product Catalog & Pricelists</h1>
+          <p className="text-xs text-[var(--text-tertiary)] mt-1">
+            Catalog products, SKUs, category discount ceilings, and list price definitions
+          </p>
+        </div>
       </div>
 
       <div className="card p-6 bg-[var(--bg-card)]">

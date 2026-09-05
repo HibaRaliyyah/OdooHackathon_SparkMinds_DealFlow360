@@ -17,6 +17,7 @@ import {
   Plus,
   Minus,
 } from 'lucide-react';
+import { BackButton } from '@/components/ui/BackButton';
 
 export default function SubscriptionsPage() {
   const { subscriptions, updateSubscription, addActivity } = useStore();
@@ -63,10 +64,13 @@ export default function SubscriptionsPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
       <div>
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-            B7 Subscription & Billing Management
-          </span>
+        <div className="flex items-center gap-3 mb-2">
+          <BackButton href="/dashboard" label="Dashboard" />
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              B7 Subscription & Billing Management
+            </span>
+          </div>
         </div>
         <h1 className="text-2xl font-black text-white tracking-tight mt-1.5">
           Recurring Subscriptions & Mid-Cycle Proration Engine
