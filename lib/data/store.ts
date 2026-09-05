@@ -84,12 +84,17 @@ interface AppState extends AuthState {
   addInvoice: (inv: Invoice) => void;
   updateInvoice: (id: string, updates: Partial<Invoice>) => void;
 
-  // Subscriptions
+  // Subscription mutations
   updateSubscription: (id: string, updates: Partial<Subscription>) => void;
 
   // Fulfillment mutations
   addFulfillmentOrder: (fo: FulfillmentOrder) => void;
   updateFulfillmentOrder: (id: string, updates: Partial<FulfillmentOrder>) => void;
+
+  // Product mutations (Admin CRUD)
+  addProduct: (product: Product) => void;
+  updateProduct: (id: string, updates: Partial<Product>) => void;
+  deleteProduct: (id: string) => void;
 
   // Demo reset
   resetDemoData: () => void;
@@ -202,7 +207,7 @@ export const useStore = create<AppState>()(
         })),
 
       // Subscriptions
-      updateSubscription: (id, updates) =>
+      updateSubscription: (id: string, updates: Partial<Subscription>) =>
         set(s => ({
           subscriptions: s.subscriptions.map(sub => sub.id === id ? { ...sub, ...updates, updatedAt: new Date().toISOString() } : sub),
         })),
@@ -214,6 +219,17 @@ export const useStore = create<AppState>()(
           fulfillmentOrders: s.fulfillmentOrders.map(fo =>
             fo.id === id ? { ...fo, ...updates, updatedAt: new Date().toISOString() } : fo
           ),
+        })),
+
+      // Product mutations (Admin CRUD)
+      addProduct: (product) => set(s => ({ products: [product, ...s.products] })),
+      updateProduct: (id, updates) =>
+        set(s => ({
+          products: s.products.map(p => (p.id === id ? { ...p, ...updates } : p)),
+        })),
+      deleteProduct: (id) =>
+        set(s => ({
+          products: s.products.filter(p => p.id !== id),
         })),
 
       // Demo reset

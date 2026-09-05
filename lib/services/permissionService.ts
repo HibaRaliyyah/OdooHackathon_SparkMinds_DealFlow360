@@ -273,3 +273,20 @@ export function canConfigureAdmin(role: UserRole | undefined | null): {
     reason: 'Backend administration and catalog configuration is restricted to Admins.',
   };
 }
+
+/**
+ * Check whether a user can perform product catalog CRUD operations (Add, Edit, Delete).
+ * Restricts CRUD strictly to ADMIN role.
+ */
+export function canManageProductCatalog(role: UserRole | undefined | null): {
+  allowed: boolean;
+  reason?: string;
+} {
+  if (role === 'ADMIN') {
+    return { allowed: true };
+  }
+  return {
+    allowed: false,
+    reason: 'Product catalog CRUD configuration (Add / Edit / Delete) is restricted strictly to Platform Admin role. Other roles have read-only catalog access.',
+  };
+}

@@ -387,6 +387,81 @@ export const QUOTATIONS: Quotation[] = [
     createdAt: '2026-08-22T08:00:00Z', updatedAt: '2026-08-23T10:00:00Z',
     notes: 'Customer requested extra discount. Under escalation.',
   },
+  {
+    id: 'quot-1043', quoteNumber: 'Q-1043',
+    customerId: 'cust-2', customerName: 'Beta Industries',
+    priceListId: 'pl-2', currency: 'USD',
+    stage: 'Rejected',
+    items: [
+      {
+        id: 'qi-10', productId: 'prod-1', productName: 'Laptop Pro 14',
+        quantity: 8, unitPrice: 1200, costPrice: 900, discount: 20,
+        allowedDiscount: 10, taxPercent: 15, lineTotal: 7680, margin: 1200,
+        discountStatus: 'OVER', discountDifference: 10, isSubscription: false,
+      },
+    ],
+    subtotal: 7680, totalDiscount: 1920, totalTax: 1152,
+    oneTimeTotal: 8832, recurringTotal: 0,
+    blendedRisk: {
+      riskScore: 92, riskLevel: 'HIGH', worstLine: 'Laptop Pro 14',
+      violations: ['Laptop Pro 14: 20% discount exceeds 10% limit by +10pt'],
+      estimatedMargin: 1200, estimatedMarginPercent: 15.6,
+      requiresApproval: true, approvalLevel: 'SALES_MANAGER_AND_FINANCE',
+      explanation: ['Rejected due to excessive discount without executive sign-off'],
+    },
+    assignedTo: 'David Miller', assignedToId: 'user-3',
+    createdAt: '2026-09-03T10:30:00Z', updatedAt: '2026-09-04T12:00:00Z',
+    notes: 'Deal rejected by Finance due to insufficient margin.',
+  },
+  {
+    id: 'quot-1044', quoteNumber: 'Q-1044',
+    customerId: 'cust-3', customerName: 'Nova Retail',
+    priceListId: 'pl-1', currency: 'USD',
+    stage: 'Approved',
+    items: [
+      {
+        id: 'qi-11', productId: 'prod-2', productName: 'Onsite Setup Service',
+        quantity: 4, unitPrice: 450, costPrice: 200, discount: 8,
+        allowedDiscount: 10, taxPercent: 10, lineTotal: 1656, margin: 856,
+        discountStatus: 'OK', discountDifference: -2, isSubscription: false,
+      },
+    ],
+    subtotal: 1656, totalDiscount: 144, totalTax: 165.6,
+    oneTimeTotal: 1821.6, recurringTotal: 0,
+    blendedRisk: {
+      riskScore: 18, riskLevel: 'LOW', worstLine: null, violations: [],
+      estimatedMargin: 856, estimatedMarginPercent: 51.6,
+      requiresApproval: false, approvalLevel: 'AUTO_APPROVED',
+      explanation: ['Setup service discount within limits'],
+    },
+    assignedTo: 'David Miller', assignedToId: 'user-3',
+    createdAt: '2026-09-02T14:15:00Z', updatedAt: '2026-09-03T09:00:00Z',
+  },
+  {
+    id: 'quot-1045', quoteNumber: 'Q-1045',
+    customerId: 'cust-5', customerName: 'Delta LLC',
+    priceListId: 'pl-1', currency: 'USD',
+    stage: 'Pending Approval',
+    items: [
+      {
+        id: 'qi-12', productId: 'prod-6', productName: 'Care Plan 2yr',
+        quantity: 10, unitPrice: 46, costPrice: 12, discount: 5,
+        allowedDiscount: 20, taxPercent: 10, lineTotal: 437, margin: 317,
+        discountStatus: 'OK', discountDifference: -15, isSubscription: true,
+        recurringCycle: 'Monthly', recurringPrice: 43.7,
+      },
+    ],
+    subtotal: 437, totalDiscount: 23, totalTax: 43.7,
+    oneTimeTotal: 480.7, recurringTotal: 437,
+    blendedRisk: {
+      riskScore: 25, riskLevel: 'LOW', worstLine: null, violations: [],
+      estimatedMargin: 317, estimatedMarginPercent: 72.5,
+      requiresApproval: false, approvalLevel: 'AUTO_APPROVED',
+      explanation: ['Subscription care plan within tier limit'],
+    },
+    assignedTo: 'Sarah Jenkins', assignedToId: 'user-4',
+    createdAt: '2026-09-04T16:20:00Z', updatedAt: '2026-09-04T16:20:00Z',
+  },
 ];
 
 // ─── Approval Requests ────────────────────────────────────────
