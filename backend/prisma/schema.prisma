@@ -1,0 +1,215 @@
+// ============================================================
+// DealFlow360 — Prisma PostgreSQL Database Schema
+// Provider: Supabase PostgreSQL
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────
+
+enum DealStatus {
+  NEW
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum ProductType {
+  Hardware
+  Services
+  Software
+  Subscription
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum NegotiationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  PARTIAL
+  FULFILLED
+  BACKORDERED
+  CANCELLED
+}
+
+// ─── MODELS ──────────────────────────────────────────────────
+
+model Customer {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  phone        String?
+  company      String
+  tier         String    @default("Gold") // Bronze, Silver, Gold, Platinum
+  currency     String    @default("USD")
+  paymentTerms String    @default("Net 30")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  deals  Deal[]
+  quotes Quote[]
+}
+
+model Product {
+  id             String      @id @default(uuid())
+  name           String
+  description    String?
+  sku            String      @unique
+  basePrice      Float       @default(0)
+  unitPrice      Float       @default(0)
+  costPrice      Float       @default(0)
+  stockQuantity  Int         @default(0)
+  type           ProductType @default(Hardware)
+  unit           String      @default("Each")
+  taxPercent     Float       @default(15)
+  isSubscription Boolean     @default(false)
+  status         String      @default("Active") // Active, Inactive
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  quoteItems   QuoteItem[]
+  fulfillments Fulfillment[]
+}
+
+model Deal {
+  id                String     @id @default(uuid())
+  title             String
+  description       String?
+  customerId        String
+  amount            Float      @default(0)
+  discount          Float      @default(0)
+  expectedMargin    Float      @default(0)
+  status            DealStatus @default(NEW)
+  probability       Float      @default(50)
+  expectedCloseDate DateTime?
+  assignedTo        String     @default("Alex Admin")
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  customer     Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  quotes       Quote[]
+  negotiations Negotiation[]
+  payments     Payment[]
+  fulfillments Fulfillment[]
+  activities   DealActivity[]
+}
+
+model Quote {
+  id          String      @id @default(uuid())
+  quoteNumber String      @unique
+  dealId      String?
+  customerId  String
+  subtotal    Float       @default(0)
+  discount    Float       @default(0)
+  tax         Float       @default(0)
+  total       Float       @default(0)
+  status      QuoteStatus @default(DRAFT)
+  validUntil  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  deal     Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  customer Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items    QuoteItem[]
+}
+
+model QuoteItem {
+  id             String   @id @default(uuid())
+  quoteId        String
+  productId      String
+  productName    String
+  quantity       Int      @default(1)
+  unitPrice      Float    @default(0)
+  costPrice      Float    @default(0)
+  discount       Float    @default(0)
+  taxPercent     Float    @default(0)
+  lineTotal      Float    @default(0)
+  margin         Float    @default(0)
+  isSubscription Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  quote   Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Negotiation {
+  id                String            @id @default(uuid())
+  dealId            String
+  requestedDiscount Float
+  approvedDiscount  Float?
+  previousAmount    Float
+  negotiatedAmount  Float
+  notes             String?
+  status            NegotiationStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id                   String        @id @default(uuid())
+  dealId               String
+  amount               Float
+  paymentMethod        String        @default("Credit Card")
+  status               PaymentStatus @default(PENDING)
+  transactionReference String?
+  paidAt               DateTime?
+  createdAt            DateTime      @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+}
+
+model Fulfillment {
+  id                String            @id @default(uuid())
+  dealId            String
+  productId         String
+  quantity          Int
+  fulfilledQuantity Int               @default(0)
+  remainingQuantity Int
+  status            FulfillmentStatus @default(PENDING)
+  expectedDate      DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  deal    Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model DealActivity {
+  id          String   @id @default(uuid())
+  dealId      String
+  type        String // e.g. "CREATED", "QUOTE_GENERATED", "NEGOTIATION_STARTED", "PAYMENT_RECEIVED"
+  description String
+  createdAt   DateTime @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+}

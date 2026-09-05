@@ -19,6 +19,7 @@ import type {
   FulfillmentOrder, Invoice, Subscription, DealHealthFlag, AuditEvent, Notification,
   ActivityItem, QuotationItem, BlendedRiskResult, ApprovalAction,
 } from '@/lib/types';
+import { productService } from '@/lib/services/api/productService';
 
 // ─── Auth State ───────────────────────────────────────────────
 interface AuthState {
@@ -221,16 +222,23 @@ export const useStore = create<AppState>()(
           ),
         })),
 
-      // Product mutations (Admin CRUD)
-      addProduct: (product) => set(s => ({ products: [product, ...s.products] })),
-      updateProduct: (id, updates) =>
+      // Product mutations (Admin CRUD + Backend Sync)
+      addProduct: (product) => {
+        set(s => ({ products: [product, ...s.products] }));
+        productService.create(product).catch(() => {});
+      },
+      updateProduct: (id, updates) => {
         set(s => ({
           products: s.products.map(p => (p.id === id ? { ...p, ...updates } : p)),
-        })),
-      deleteProduct: (id) =>
+        }));
+        productService.update(id, updates).catch(() => {});
+      },
+      deleteProduct: (id) => {
         set(s => ({
           products: s.products.filter(p => p.id !== id),
-        })),
+        }));
+        productService.delete(id).catch(() => {});
+      },
 
       // Demo reset
       resetDemoData: () =>
