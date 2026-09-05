@@ -307,56 +307,23 @@ export default function DealHealthPage() {
               cell: (f) => {
                 const q = quotations.find((item) => item.id === f.quotationId);
                 const repName = q?.assignedTo || 'Jasmine Rao';
-                const statusInfo = getFlagStatusInfo(f);
+                const actionLabel = dispatchedFlags[f.id] || f.actionTaken || `Send Nudge to ${repName}`;
+                const isDispatched = Boolean(dispatchedFlags[f.id] || f.actionTaken);
 
                 return (
                   <div className="flex items-center gap-2">
-                    {canTriggerNudge ? (
-                      dispatchedFlags[f.id] || f.actionTaken ? (
-                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 cursor-default select-none">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>{dispatchedFlags[f.id] || f.actionTaken}</span>
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          leftIcon={<Bell className="w-3.5 h-3.5 text-amber-400" />}
-                          onClick={() => {
-                            const nudgeText = `Nudge sent to ${repName}`;
-                            setDispatchedFlags((prev) => ({
-                              ...prev,
-                              [f.id]: nudgeText,
-                            }));
-                            addActivity({
-                              id: `act-${Date.now()}`,
-                              type: 'alert',
-                              message: `Escalation nudge dispatched to ${repName} for Quote ${f.quotationNumber || f.quotationId}.`,
-                              relatedTo: f.id,
-                              timestamp: new Date().toISOString(),
-                            });
-                            addNotification({
-                              id: `notif-${Date.now()}`,
-                              userId: 'user-2',
-                              title: `Escalation Nudge Sent: Quote #${f.quotationNumber || f.quotationId}`,
-                              message: `Nudge dispatched to ${repName}: ${f.description}`,
-                              type: 'warning',
-                              read: false,
-                              createdAt: new Date().toISOString(),
-                            });
-                            setEscalatedNotice(`Nudge successfully sent to ${repName}!`);
-                            setTimeout(() => setEscalatedNotice(''), 5000);
-                          }}
-                        >
-                          Trigger Escalation Nudge
-                        </Button>
-                      )
-                    ) : (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 cursor-default select-none">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>{statusInfo.text}</span>
-                      </span>
-                    )}
+                    <button
+                      onClick={() => handleOpenNudgeModal(f)}
+                      title="Click to dispatch escalation nudge via Slack & Email"
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border shadow-md active:scale-95 ${
+                        isDispatched
+                          ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40 hover:border-emerald-500/60'
+                          : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40 hover:border-amber-500/60'
+                      }`}
+                    >
+                      <Bell className={`w-3.5 h-3.5 ${isDispatched ? 'text-emerald-400' : 'text-amber-400 animate-pulse'}`} />
+                      <span>{actionLabel}</span>
+                    </button>
 
                     <Link href={`/quotations/${f.quotationId}`}>
                       <Button size="sm" variant="primary">
