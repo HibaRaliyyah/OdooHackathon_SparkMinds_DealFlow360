@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/data/store';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
 import {
   CheckSquare,
   ShieldAlert,
@@ -23,10 +24,32 @@ import {
   Truck,
   MapPin,
   PackageCheck,
+  MessageSquare,
+  Search,
+  User,
+  Building2,
+  Send,
 } from 'lucide-react';
 
 export function SalesManagerDashboard() {
-  const { approvalRequests, quotations, dealHealthFlags, fulfillmentOrders, warehouses, addApprovalAction, updateApprovalStage, addActivity } = useStore();
+  const {
+    approvalRequests,
+    quotations,
+    dealHealthFlags,
+    fulfillmentOrders,
+    warehouses,
+    negotiations,
+    customers,
+    addApprovalAction,
+    updateApprovalStage,
+    addActivity,
+    updateNegotiation,
+  } = useStore();
+
+  const [showNegotiationsModal, setShowNegotiationsModal] = useState(false);
+  const [selectedNegId, setSelectedNegId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
 
   const pendingApprovals = approvalRequests.filter((r) => r.status === 'Pending');
   const highRiskQuotes = quotations.filter((q) => q.blendedRisk?.riskLevel === 'HIGH');
@@ -75,6 +98,35 @@ export function SalesManagerDashboard() {
     });
   };
 
+  const handleSendReply = (negId: string) => {
+    if (!replyText.trim()) return;
+
+    const targetNeg = (negotiations || []).find((n) => n.id === negId);
+    if (!targetNeg) return;
+
+    const newMsg = {
+      id: `msg-${Date.now()}`,
+      negotiationId: negId,
+      senderId: 'user-3',
+      senderName: 'Mihail Shah',
+      senderRole: 'SALES_MANAGER' as const,
+      message: replyText.trim(),
+      timestamp: new Date().toISOString(),
+    };
+
+    updateNegotiation(negId, {
+      messages: [...targetNeg.messages, newMsg],
+      status: 'Counter-Offered',
+    });
+
+    setReplyText('');
+  };
+
+  const filteredNegotiations = (negotiations || []).filter((n) =>
+    (n.customerName || '').toLowerCase().includes(searchFilter.toLowerCase()) ||
+    (n.quotationNumber || '').toLowerCase().includes(searchFilter.toLowerCase())
+  );
+
   return (
     <div className="space-y-8">
       {/* Sales Manager Hero Header with Duties */}
@@ -111,6 +163,15 @@ export function SalesManagerDashboard() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-3">
+            <Button
+              variant="outline"
+              size="md"
+              leftIcon={<MessageSquare className="w-4 h-4 text-cyan-400" />}
+              onClick={() => setShowNegotiationsModal(true)}
+              className="border-cyan-500/30 text-white hover:bg-cyan-950/40"
+            >
+              Negotiations ({(negotiations || []).length})
+            </Button>
             <Link href="/approvals">
               <Button variant="primary" size="md" leftIcon={<CheckSquare className="w-4 h-4" />}>
                 Approvals Hub
@@ -447,6 +508,194 @@ export function SalesManagerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ─── CUSTOMER NEGOTIATIONS HISTORY MODAL ─── */}
+      {showNegotiationsModal && (
+        <Modal
+          isOpen={true}
+          onClose={() => setShowNegotiationsModal(false)}
+          title="Customer Negotiation History & Proposal Threads"
+          subtitle="All previous customer counter-offers, requested discount changes, and thread message logs."
+          maxWidth="2xl"
+        >
+          <div className="space-y-6">
+            {/* Search Filter */}
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search negotiations by Customer Name or Quote #..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            {/* List of Previous Negotiations */}
+            <div className="space-y-5 max-h-[550px] overflow-y-auto pr-1 scrollbar-thin">
+              {filteredNegotiations.map((neg) => {
+                const cust = (customers || []).find((c) => c.id === neg.customerId);
+
+                return (
+                  <div
+                    key={neg.id}
+                    className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4 hover:border-cyan-500/40 transition-all"
+                  >
+                    {/* Header Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
+                          <Building2 className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-white text-sm">{neg.customerName}</span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                              Quote #{neg.quotationNumber}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400">
+                            Customer Tier: <strong className="text-amber-400">{cust?.tier || 'Gold'} Tier</strong> · Manager Review: <strong className="text-white">Mihail Shah</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <Badge
+                        variant={
+                          neg.status === 'Resolved'
+                            ? 'success'
+                            : neg.status === 'Counter-Offered'
+                            ? 'info'
+                            : 'warning'
+                        }
+                      >
+                        {neg.status}
+                      </Badge>
+                    </div>
+
+                    {/* Customer & Account Details Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block">Primary Contact</span>
+                        <span className="font-bold text-white flex items-center gap-1.5 mt-0.5">
+                          <User className="w-3 h-3 text-cyan-400" />
+                          {cust?.contact || 'Tom Acme'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block font-mono">{cust?.email || 'tom@acme.demo'}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block">Negotiation Date</span>
+                        <span className="font-semibold text-slate-300 block mt-0.5">
+                          {new Date(neg.createdAt).toLocaleDateString()}
+                        </span>
+                        <span className="text-[10px] text-slate-400">Updated: {new Date(neg.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase font-bold block">Reapproval Status</span>
+                        <span className={`font-bold block mt-0.5 ${neg.triggeredReapproval ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          {neg.triggeredReapproval ? 'Requires Manager Reapproval' : 'Standard Rep Authority'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Requested Changes Breakdown */}
+                    {neg.requestedChanges && neg.requestedChanges.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 block">
+                          Requested Changes & Discount Outliers:
+                        </span>
+                        <div className="space-y-2">
+                          {neg.requestedChanges.map((chg, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl bg-amber-950/30 border border-amber-500/30 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                            >
+                              <div>
+                                <span className="font-bold text-white">{chg.productName}</span>
+                                {chg.comment && <p className="text-[11px] text-slate-300 mt-0.5">"{chg.comment}"</p>}
+                              </div>
+                              {chg.requestedDiscount && (
+                                <span className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 font-mono font-bold border border-amber-500/30 text-xs shrink-0">
+                                  Requested Discount: {chg.requestedDiscount}%
+                                </span>
+                              )}
+                              {chg.requestedDeliveryDate && (
+                                <span className="px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-300 font-mono font-bold border border-indigo-500/30 text-xs shrink-0">
+                                  Requested Date: {chg.requestedDeliveryDate}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Previous Message Thread History */}
+                    <div className="space-y-2 pt-2 border-t border-slate-800">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                        Message History Thread ({neg.messages.length}):
+                      </span>
+
+                      <div className="space-y-2.5 max-h-48 overflow-y-auto p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 scrollbar-thin">
+                        {neg.messages.map((msg) => {
+                          const isCustomer = msg.senderRole === 'CUSTOMER';
+
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`p-3 rounded-xl text-xs space-y-1 ${
+                                isCustomer
+                                  ? 'bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 ml-0 mr-6'
+                                  : 'bg-purple-950/40 border border-purple-500/30 text-purple-200 ml-6 mr-0'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-extrabold text-white flex items-center gap-1.5">
+                                  <User className="w-3 h-3 text-slate-400" />
+                                  {msg.senderName} ({msg.senderRole})
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <p className="text-slate-300 text-[11px] leading-relaxed">{msg.message}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Reply / Counter-Offer Input */}
+                    <div className="pt-2 flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder={`Reply to ${neg.customerName}...`}
+                        value={selectedNegId === neg.id ? replyText : ''}
+                        onFocus={() => setSelectedNegId(neg.id)}
+                        onChange={(e) => {
+                          setSelectedNegId(neg.id);
+                          setReplyText(e.target.value);
+                        }}
+                        className="flex-1 text-xs bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                      />
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        leftIcon={<Send className="w-3.5 h-3.5" />}
+                        onClick={() => handleSendReply(neg.id)}
+                      >
+                        Send Reply
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
