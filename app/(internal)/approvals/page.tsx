@@ -7,6 +7,7 @@ import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { BackButton } from '@/components/ui/BackButton';
+import { Modal } from '@/components/ui/Modal';
 import {
   ArrowRight,
   ShieldAlert,
@@ -84,7 +85,7 @@ export default function ApprovalsPage() {
     addActivity({
       id: `act-${Date.now()}`,
       type: 'approval',
-      message: `${currentUser?.name || 'Reviewer'} recorded ${actionType} decision on Quote #${req.quotationNumber}. Reason: ${reasonText || 'Standard review completed.'}`,
+      message: `${currentUser?.name || 'Mihail Shah'} recorded ${actionType} decision on Quote #${req.quotationNumber}. Reason: ${reasonText || 'Standard review completed.'}`,
       relatedTo: req.quotationId,
       timestamp: new Date().toISOString(),
     });
@@ -122,60 +123,65 @@ export default function ApprovalsPage() {
         </div>
       )}
 
-      {/* Decision Modal / Drawer */}
+      {/* Decision Modal */}
       {selectedReqId && actionType && (
-        <div className="card p-6 bg-slate-900 border-2 border-indigo-500 rounded-3xl space-y-4 shadow-2xl animate-in fade-in">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-indigo-400" />
-              <h3 className="text-sm font-extrabold text-white">
-                Record Decision: <span className="text-indigo-300">{actionType} Quotation</span>
-              </h3>
+        <Modal
+          isOpen={true}
+          onClose={() => {
+            setSelectedReqId(null);
+            setActionType(null);
+          }}
+          title={`Record Decision: ${actionType} Quotation #${
+            approvalRequests.find((r) => r.id === selectedReqId)?.quotationNumber || ''
+          }`}
+          subtitle="This decision will update the quotation status, advance the approval stage, and write a full audit trail record."
+          maxWidth="lg"
+        >
+          <div className="space-y-4 pt-1">
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
+              <div className="font-bold text-white flex items-center justify-between">
+                <span>Quotation #{approvalRequests.find((r) => r.id === selectedReqId)?.quotationNumber}</span>
+                <span className="text-slate-400">Customer: {approvalRequests.find((r) => r.id === selectedReqId)?.customerName}</span>
+              </div>
+              <p className="text-slate-400 text-[11px]">
+                Selected Action: <strong className="text-indigo-300">{actionType}</strong> · Stage: {approvalRequests.find((r) => r.id === selectedReqId)?.stage}
+              </p>
             </div>
-            <button
-              onClick={() => {
-                setSelectedReqId(null);
-                setActionType(null);
-              }}
-              className="text-xs text-slate-400 hover:text-white cursor-pointer"
-            >
-              Cancel
-            </button>
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Audit Reason & Reviewer Notes (Required for Compliance Trace)
-            </label>
-            <textarea
-              rows={3}
-              value={reasonText}
-              onChange={(e) => setReasonText(e.target.value)}
-              placeholder="Provide business justification, margin rationale, or instructions for revision..."
-              className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                Audit Reason & Reviewer Notes (Required for Compliance Trace)
+              </label>
+              <textarea
+                rows={3}
+                value={reasonText}
+                onChange={(e) => setReasonText(e.target.value)}
+                placeholder="Provide business justification, margin rationale, or instructions for revision..."
+                className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
 
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedReqId(null);
-                setActionType(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant={actionType === 'Approve' ? 'primary' : actionType === 'Reject' ? 'danger' : 'outline'}
-              size="sm"
-              onClick={handleDecisionSubmit}
-            >
-              Confirm & Write to Audit Trail
-            </Button>
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSelectedReqId(null);
+                  setActionType(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant={actionType === 'Approve' ? 'primary' : actionType === 'Reject' ? 'danger' : 'outline'}
+                size="sm"
+                onClick={handleDecisionSubmit}
+              >
+                Confirm & Write to Audit Trail
+              </Button>
+            </div>
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Pending Approvals Card */}
@@ -231,7 +237,7 @@ export default function ApprovalsPage() {
               cell: (r) => {
                 const assignedToId = quotations.find((q) => q.id === r.quotationId)?.assignedToId;
                 const auth = canApproveQuotation(
-                  { id: currentUser?.id || '', role: currentUser?.role || 'SALES_REP' },
+                  { id: currentUser?.id || 'user-3', role: currentUser?.role || 'SALES_MANAGER' },
                   r,
                   assignedToId
                 );
