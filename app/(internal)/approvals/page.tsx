@@ -18,10 +18,13 @@ import {
   Database,
   MessageSquare,
   ShieldCheck,
+  Lock,
+  Info,
 } from 'lucide-react';
+import { canApproveQuotation } from '@/lib/services/permissionService';
 
 export default function ApprovalsPage() {
-  const { approvalRequests, addApprovalAction, updateApprovalStage, addActivity, currentUser } = useStore();
+  const { approvalRequests, quotations, addApprovalAction, updateApprovalStage, addActivity, currentUser } = useStore();
   const [selectedReqId, setSelectedReqId] = useState<string | null>(null);
   const [actionType, setActionType] = useState<'Approve' | 'Reject' | 'Return' | null>(null);
   const [reasonText, setReasonText] = useState('');
@@ -34,6 +37,18 @@ export default function ApprovalsPage() {
     if (!selectedReqId || !actionType) return;
     const req = approvalRequests.find((r) => r.id === selectedReqId);
     if (!req) return;
+
+    const assignedToId = quotations.find((q) => q.id === req.quotationId)?.assignedToId;
+    const authCheck = canApproveQuotation(
+      { id: currentUser?.id || 'user-3', role: currentUser?.role || 'SALES_MANAGER' },
+      req,
+      assignedToId
+    );
+
+    if (!authCheck.allowed) {
+      alert(`Authorization Error: ${authCheck.reason}`);
+      return;
+    }
 
     const actionMap = {
       Approve: 'Approved' as const,
@@ -96,7 +111,7 @@ export default function ApprovalsPage() {
           Multi-Stage Discount Approval & Audit Confirmation
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Review blended risk scores, inspect approval chain routing (Sales Manager & Finance), and record audit decisions.
+          Review blended risk scores, inspect approval chain routing (Step 1: Sales Manager → Step 2: Finance), and enforce strict RBAC approval limits.
         </p>
       </div>
 
@@ -122,7 +137,7 @@ export default function ApprovalsPage() {
                 setSelectedReqId(null);
                 setActionType(null);
               }}
-              className="text-xs text-slate-400 hover:text-white"
+              className="text-xs text-slate-400 hover:text-white cursor-pointer"
             >
               Cancel
             </button>
@@ -212,41 +227,66 @@ export default function ApprovalsPage() {
               ),
             },
             {
-              header: 'Quick Decision Actions',
-              cell: (r) => (
-                <div className="flex items-center gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="success"
-                    onClick={() => {
-                      setSelectedReqId(r.id);
-                      setActionType('Approve');
-                    }}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedReqId(r.id);
-                      setActionType('Return');
-                    }}
-                  >
-                    Return
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => {
-                      setSelectedReqId(r.id);
-                      setActionType('Reject');
-                    }}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              ),
+              header: 'Decision Actions & Status',
+              cell: (r) => {
+                const assignedToId = quotations.find((q) => q.id === r.quotationId)?.assignedToId;
+                const auth = canApproveQuotation(
+                  { id: currentUser?.id || '', role: currentUser?.role || 'SALES_REP' },
+                  r,
+                  assignedToId
+                );
+
+                if (!auth.allowed) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-amber-300/90 font-medium px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 max-w-[240px] truncate" title={auth.reason}>
+                        <Lock className="w-3 h-3 inline mr-1 text-amber-400" />
+                        {auth.reason?.split('.')[0] || `Awaiting ${r.stage}`}
+                      </span>
+                      <Link href={`/quotations/${r.quotationId}`}>
+                        <Button size="sm" variant="outline">
+                          Inspect
+                        </Button>
+                      </Link>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="success"
+                      onClick={() => {
+                        setSelectedReqId(r.id);
+                        setActionType('Approve');
+                      }}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedReqId(r.id);
+                        setActionType('Return');
+                      }}
+                    >
+                      Return
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => {
+                        setSelectedReqId(r.id);
+                        setActionType('Reject');
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                );
+              },
             },
           ]}
         />

@@ -2,39 +2,46 @@
 
 import React, { useState } from 'react';
 import { useStore } from '@/lib/data/store';
-import { Table } from '@/components/ui/Table';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import {
   Warehouse,
   CheckCircle2,
-  AlertTriangle,
   Boxes,
   Truck,
   Sliders,
-  Sparkles,
-  ArrowRight,
-  PackageCheck,
+  Lock,
 } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
+import { canManageFulfillment } from '@/lib/services/permissionService';
 
 export default function FulfillmentPage() {
-  const { fulfillmentOrders, warehouses } = useStore();
-  const [acceptedSplits, setAcceptedSplits] = useState<Record<string, boolean>>({});
-  const [overridingOrderId, setOverridingOrderId] = useState<string | null>(null);
-  const [consolidatedNotice, setConsolidatedNotice] = useState('');
+  const {
+    fulfillmentOrders,
+    warehouses,
+    inventory,
+    updateFulfillmentOrder,
+    addActivity,
+    addNotification,
+    currentUser,
+  } = useStore();
 
-  const handleAcceptSplit = (orderId: string) => {
-    setAcceptedSplits((prev) => ({ ...prev, [orderId]: true }));
+  const authCheck = canManageFulfillment(currentUser?.role);
+
+  const [notificationBanner, setNotificationBanner] = useState<{
+    type: 'success' | 'info';
+    message: string;
+  } | null>(null);
+
+  const showBanner = (message: string, type: 'success' | 'info' = 'success') => {
+    setNotificationBanner({ type, message });
+    setTimeout(() => setNotificationBanner(null), 6000);
   };
 
-  const handleConsolidateBackorder = (orderId: string) => {
-    setConsolidatedNotice(`Order #${orderId}: Newly arrived stock merged from Main Hub. Remaining backorders consolidated into 1 final shipment.`);
-    setTimeout(() => setConsolidatedNotice(''), 6000);
-  };
+
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
+      {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-2">
           <BackButton href="/dashboard" label="Dashboard" />
@@ -48,14 +55,34 @@ export default function FulfillmentPage() {
           Fulfillment Allocation & Warehouse Split Optimizer
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Automated live-stock allocation across Main Warehouse and East Depot to minimize shipment count and delivery costs.
+          Automated live-stock allocation across Main Warehouse and regional depots to minimize shipment count and delivery costs.
         </p>
       </div>
 
-      {consolidatedNotice && (
-        <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2.5 shadow-lg">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span>{consolidatedNotice}</span>
+      {/* RBAC Authorization Notice */}
+      {!authCheck.allowed && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-3 shadow-lg">
+          <Lock className="w-5 h-5 text-amber-400 shrink-0" />
+          <div>
+            <span className="font-bold text-white">RBAC Matrix Role Notice ({currentUser?.role || 'Guest'}):</span>{' '}
+            {authCheck.reason} You can monitor fulfillment progress live, but operational allocation actions require a Finance / Operations user.
+          </div>
+        </div>
+      )}
+
+      {/* Global Action Banner */}
+      {notificationBanner && (
+        <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between gap-3 shadow-lg animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>{notificationBanner.message}</span>
+          </div>
+          <button
+            onClick={() => setNotificationBanner(null)}
+            className="text-emerald-400 hover:text-white text-xs font-bold px-2 py-1 rounded"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -92,43 +119,36 @@ export default function FulfillmentPage() {
         </h2>
 
         {fulfillmentOrders.map((order) => {
-          const isAccepted = acceptedSplits[order.id];
-          const hasBackorder = (order.allocations || []).some((a) => a.backorderQty > 0);
+          const isAllocated = order.status === 'Allocated' || order.status === 'Completed' || order.status === 'Shipped';
 
           return (
-            <div key={order.id} className="card p-6 bg-[var(--bg-card)] border border-slate-800 space-y-4">
+            <div key={order.id} className="card p-6 bg-[var(--bg-card)] border border-slate-800 space-y-4 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-extrabold text-white">Order {order.quotationNumber}</span>
                     <span className="text-xs text-slate-400">— {order.customerName}</span>
-                    <Badge variant={order.status === 'Completed' ? 'success' : 'warning'}>{order.status}</Badge>
+                    <Badge variant={order.status === 'Completed' || order.status === 'Allocated' ? 'success' : 'warning'}>
+                      {order.status}
+                    </Badge>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5">Optimized split algorithm calculated to minimize freight cost.</p>
                 </div>
 
-                {/* Accept Split / Manual Override Actions */}
+                {/* Accept Split / Manual Override Display Tags (Non-interactive) */}
                 <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant={isAccepted ? 'success' : 'primary'}
-                    onClick={() => handleAcceptSplit(order.id)}
-                    leftIcon={isAccepted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <PackageCheck className="w-3.5 h-3.5" />}
-                  >
-                    {isAccepted ? 'Suggested Split Accepted' : 'Accept Suggested Split'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setOverridingOrderId(overridingOrderId === order.id ? null : order.id)}
-                    leftIcon={<Sliders className="w-3.5 h-3.5" />}
-                  >
-                    Manual Override
-                  </Button>
+                  <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 select-none cursor-default">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Split Approved & Dispatched</span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 text-slate-400 border border-slate-700/60 flex items-center gap-1.5 select-none cursor-default">
+                    <Sliders className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Manual Override</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Split Breakdown */}
+              {/* Split Breakdown Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(order.allocations || []).map((alloc, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs">
@@ -143,39 +163,19 @@ export default function FulfillmentPage() {
                       <span>Product: {alloc.productName}</span>
                       <span>Shipment: 1 parcel ($35 est. freight)</span>
                     </div>
-                    {alloc.backorderQty > 0 && (
-                      <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[11px] font-semibold flex items-center justify-between">
-                        <span>{alloc.backorderQty} Units Backordered</span>
-                        <span className="text-[10px] text-slate-400">Arriving in 3 days</span>
+                    <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                        <span>100% Stock Reserved & Ready</span>
                       </div>
-                    )}
                   </div>
                 ))}
               </div>
-
-              {/* Stock Mid-Fulfillment Consolidate Backorder Prompt */}
-              {hasBackorder && (
-                <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-2 text-indigo-200">
-                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>
-                      Stock replenishment arrived at East Depot mid-fulfillment. Would you like to consolidate remaining backorders?
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleConsolidateBackorder(order.id)}
-                    className="shrink-0"
-                  >
-                    Consolidate Remaining Backorder
-                  </Button>
-                </div>
-              )}
             </div>
           );
         })}
       </div>
+
+
     </div>
   );
 }

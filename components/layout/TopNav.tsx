@@ -10,7 +10,6 @@ import {
   Sliders,
   LogOut,
   FileText,
-  LayoutGrid,
   CheckCircle2,
   ArrowLeft,
 } from 'lucide-react';
@@ -50,24 +49,13 @@ export function TopNav() {
           <Link
             href="/quotations"
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              pathname === '/quotations' && !pathname.includes('pipeline')
+              pathname === '/quotations'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-white'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Quotations</span>
-          </Link>
-          <Link
-            href="/quotations?view=pipeline"
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-              pathname.includes('pipeline')
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <LayoutGrid className="w-3.5 h-3.5" />
-            <span>Pipeline (Kanban)</span>
           </Link>
         </div>
 

@@ -18,6 +18,7 @@ import {
   Sparkles,
   LogOut,
   Building,
+  Warehouse,
 } from 'lucide-react';
 import { useStore } from '@/lib/data/store';
 
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { label: 'Quotations', href: '/quotations', icon: FileText },
   { label: 'Approvals', href: '/approvals', icon: CheckSquare, badgeKey: 'approvalRequests' },
   { label: 'Fulfillment', href: '/fulfillment', icon: Boxes },
+  { label: 'Warehouses', href: '/warehouses', icon: Warehouse },
   { label: 'Subscriptions', href: '/subscriptions', icon: RefreshCw },
   { label: 'Invoices', href: '/invoices', icon: Receipt },
   { label: 'Products', href: '/products', icon: Package },
@@ -97,18 +99,20 @@ export function Sidebar() {
             );
           })}
 
-          <div className="pt-3 mt-3 border-t border-[var(--border-subtle)]">
-            <Link
-              href="/portal/quotation"
-              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-teal-400 bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-teal-400" />
-                <span>Customer Portal</span>
-              </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-400/20 text-teal-300">Acme Corp</span>
-            </Link>
-          </div>
+          {(currentUser?.role === 'CUSTOMER' || currentUser?.role === 'SALES_REP') && (
+            <div className="pt-3 mt-3 border-t border-[var(--border-subtle)]">
+              <Link
+                href="/portal/quotation"
+                className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-teal-400 bg-teal-500/10 border border-teal-500/20 hover:bg-teal-500/20 transition-all"
+              >
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-teal-400" />
+                  <span>Customer Portal</span>
+                </div>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-400/20 text-teal-300">Acme Corp</span>
+              </Link>
+            </div>
+          )}
         </nav>
       </div>
 

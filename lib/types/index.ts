@@ -2,8 +2,9 @@
 // DealFlow360 — Shared Type Definitions
 // ============================================================
 
-// ─── Roles ──────────────────────────────────────────────────
+// ─── Roles & Permissions ─────────────────────────────────────
 export type UserRole = 'ADMIN' | 'SALES_REP' | 'SALES_MANAGER' | 'FINANCE' | 'CUSTOMER';
+export type { Permission } from '@/lib/services/permissionService';
 
 export interface User {
   id: string;

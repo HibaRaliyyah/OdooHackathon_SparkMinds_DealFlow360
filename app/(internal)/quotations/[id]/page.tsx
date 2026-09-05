@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import type { FulfillmentOrder } from '@/lib/types';
+import { canApproveQuotation } from '@/lib/services/permissionService';
 
 export default function QuotationDetailPage() {
   const params = useParams();
@@ -42,6 +43,14 @@ export default function QuotationDetailPage() {
 
   const quotation = quotations.find((q: any) => q.id === id);
   const approvalReq = approvalRequests.find((r: any) => r.quotationId === id);
+
+  const authCheck = approvalReq
+    ? canApproveQuotation(
+        { id: currentUser?.id || '', role: currentUser?.role || 'SALES_REP' },
+        approvalReq,
+        quotation?.assignedToId
+      )
+    : { allowed: false, reason: 'No pending approval stage' };
 
   if (!quotation) {
     return (
@@ -145,30 +154,41 @@ export default function QuotationDetailPage() {
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
           {quotation.stage === 'Pending Approval' && (
-            <>
-              <Button
-                variant="danger"
-                size="md"
-                onClick={() => {
-                  setModalAction('REJECT');
-                  setShowApprovalModal(true);
-                }}
-                leftIcon={<XCircle className="w-4 h-4" />}
-              >
-                Reject Deal
-              </Button>
-              <Button
-                variant="success"
-                size="md"
-                onClick={() => {
-                  setModalAction('APPROVE');
-                  setShowApprovalModal(true);
-                }}
-                leftIcon={<CheckCircle2 className="w-4 h-4" />}
-              >
-                Approve Deal
-              </Button>
-            </>
+            authCheck.allowed ? (
+              <>
+                <Button
+                  variant="danger"
+                  size="md"
+                  onClick={() => {
+                    setModalAction('REJECT');
+                    setShowApprovalModal(true);
+                  }}
+                  leftIcon={<XCircle className="w-4 h-4" />}
+                >
+                  Reject Deal
+                </Button>
+                <Button
+                  variant="success"
+                  size="md"
+                  onClick={() => {
+                    setModalAction('APPROVE');
+                    setShowApprovalModal(true);
+                  }}
+                  leftIcon={<CheckCircle2 className="w-4 h-4" />}
+                >
+                  Approve Deal
+                </Button>
+              </>
+            ) : (
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>
+                  {currentUser?.role === 'ADMIN'
+                    ? `Admin Governance View — Approvals assigned to ${approvalReq?.stage || 'Sales Manager & Finance'}`
+                    : `Awaiting Sign-Off (${approvalReq?.stage || 'Sales Manager & Finance'})`}
+                </span>
+              </div>
+            )
           )}
 
           {quotation.stage === 'Approved' && (

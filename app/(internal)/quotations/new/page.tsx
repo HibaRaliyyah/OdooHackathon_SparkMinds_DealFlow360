@@ -10,12 +10,15 @@ import { LineItemRow } from '@/components/quotation/LineItemRow';
 import { RiskPanel } from '@/components/quotation/RiskPanel';
 import { AIRecommendations } from '@/components/ai/AIRecommendations';
 import { Button } from '@/components/ui/Button';
-import { ArrowLeft, Plus, Send, Save, Building } from 'lucide-react';
+import { ArrowLeft, Plus, Send, Save, Building, Lock } from 'lucide-react';
 import Link from 'next/link';
+import { canCreateQuotation } from '@/lib/services/permissionService';
 
 export default function NewQuotationPage() {
   const router = useRouter();
   const { customers, products, productCategories, addQuotation, updateQuotation, addApprovalRequest, addActivity, currentUser } = useStore();
+
+  const createAuth = canCreateQuotation(currentUser?.role);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(customers[0]?.id || '');
   const [items, setItems] = useState<QuotationItem[]>([]);
@@ -160,6 +163,27 @@ export default function NewQuotationPage() {
 
     router.push(`/quotations/${qId}`);
   };
+
+  if (currentUser && currentUser.role !== 'SALES_REP') {
+    return (
+      <div className="max-w-2xl mx-auto p-8 mt-12 bg-slate-900/90 border border-slate-800 rounded-3xl text-center space-y-4 shadow-2xl animate-in fade-in">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/20">
+          <Building className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-extrabold text-white">Quotation Builder Restricted</h2>
+        <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+          Only official <strong>Sales Representatives (SALES_REP)</strong> have permission to build and submit new deal quotations. Your role is <strong>{currentUser.role}</strong>.
+        </p>
+        <div className="pt-2">
+          <Link href="/quotations">
+            <Button variant="primary" size="md">
+              Return to Quotations
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 max-w-7xl mx-auto pb-12">

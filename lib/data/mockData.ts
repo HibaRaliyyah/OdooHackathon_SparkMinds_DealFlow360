@@ -18,6 +18,9 @@ export const USERS: User[] = [
   { id: 'user-3', email: 'manager@dealflow360.demo', name: 'Mihail Shah', role: 'SALES_MANAGER', avatarInitials: 'MS', createdAt: '2026-01-01T00:00:00Z' },
   { id: 'user-4', email: 'finance@dealflow360.demo', name: 'Riya Iyer', role: 'FINANCE', avatarInitials: 'RI', createdAt: '2026-01-01T00:00:00Z' },
   { id: 'user-5', email: 'customer@dealflow360.demo', name: 'Tom Acme', role: 'CUSTOMER', avatarInitials: 'TA', company: 'Acme Corp', createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'user-6', email: 'customer.bronze@dealflow360.demo', name: 'Priya Zen', role: 'CUSTOMER', avatarInitials: 'PZ', company: 'Zenith Co', createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'user-7', email: 'customer.silver@dealflow360.demo', name: 'Sarah Bet', role: 'CUSTOMER', avatarInitials: 'SB', company: 'Beta Industries', createdAt: '2026-01-01T00:00:00Z' },
+  { id: 'user-8', email: 'customer.platinum@dealflow360.demo', name: 'Carlos Del', role: 'CUSTOMER', avatarInitials: 'CD', company: 'Delta LLC', createdAt: '2026-01-01T00:00:00Z' },
 ];
 
 export const DEMO_PASSWORDS: Record<string, string> = {
@@ -26,6 +29,9 @@ export const DEMO_PASSWORDS: Record<string, string> = {
   'manager@dealflow360.demo': 'demo1234',
   'finance@dealflow360.demo': 'demo1234',
   'customer@dealflow360.demo': 'demo1234',
+  'customer.bronze@dealflow360.demo': 'demo1234',
+  'customer.silver@dealflow360.demo': 'demo1234',
+  'customer.platinum@dealflow360.demo': 'demo1234',
 };
 
 // ─── Customer Tiers ───────────────────────────────────────────
@@ -445,15 +451,18 @@ export const FULFILLMENT_ORDERS: FulfillmentOrder[] = [
   {
     id: 'ful-1042', quotationId: 'quot-1042', quotationNumber: 'Q-1042',
     customerId: 'cust-1', customerName: 'Acme Corp',
-    status: 'Partially Shipped',
+    status: 'Allocated',
     allocations: [
       { warehouseId: 'wh-1', warehouseName: 'Main Warehouse', productId: 'prod-1', productName: 'Laptop Pro 14', requestedQty: 2, allocatedQty: 2, shippedQty: 2, backorderQty: 0 },
-      { warehouseId: 'wh-1', warehouseName: 'Main Warehouse', productId: 'prod-5', productName: 'Docking Station', requestedQty: 2, allocatedQty: 2, shippedQty: 1, backorderQty: 1 },
+      { warehouseId: 'wh-1', warehouseName: 'Main Warehouse', productId: 'prod-5', productName: 'Docking Station', requestedQty: 2, allocatedQty: 2, shippedQty: 2, backorderQty: 0 },
     ],
     shipments: [
       {
         id: 'ship-1', orderId: 'ful-1042', warehouseId: 'wh-1', warehouseName: 'Main Warehouse',
-        items: [{ productId: 'prod-1', productName: 'Laptop Pro 14', quantity: 2 }],
+        items: [
+          { productId: 'prod-1', productName: 'Laptop Pro 14', quantity: 2 },
+          { productId: 'prod-5', productName: 'Docking Station', quantity: 2 },
+        ],
         shippedAt: '2026-08-25T08:00:00Z', estimatedDelivery: '2026-08-27T17:00:00Z',
         shippingCost: 42, status: 'Delivered',
       },

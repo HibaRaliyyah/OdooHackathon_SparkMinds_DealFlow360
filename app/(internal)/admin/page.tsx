@@ -27,8 +27,10 @@ import {
   KeyRound,
   FileSpreadsheet,
   FileText,
+  Lock,
 } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
+import { canConfigureAdmin } from '@/lib/services/permissionService';
 
 export default function AdminBackendPage() {
   const {
@@ -41,7 +43,10 @@ export default function AdminBackendPage() {
     users,
     auditEvents,
     priceLists,
+    currentUser,
   } = useStore();
+
+  const adminAuth = canConfigureAdmin(currentUser?.role);
 
   const [activeTab, setActiveTab] = useState<'A1' | 'A2' | 'A3' | 'A4' | 'A5' | 'A6' | 'A7'>('A2');
 
@@ -64,6 +69,27 @@ export default function AdminBackendPage() {
       setTimeout(() => setExportedMsg(''), 4000);
     }, 800);
   };
+
+  if (!adminAuth.allowed) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 mt-12 bg-slate-900/90 border border-slate-800 rounded-3xl text-center space-y-4 shadow-2xl animate-in fade-in">
+        <div className="w-12 h-12 rounded-2xl bg-rose-500/15 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/20">
+          <Lock className="w-6 h-6" />
+        </div>
+        <h2 className="text-xl font-extrabold text-white">Backend Administration Restricted</h2>
+        <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+          {adminAuth.reason} Your current role is <strong>{currentUser?.role || 'Guest'}</strong>.
+        </p>
+        <div className="pt-2">
+          <Link href="/dashboard">
+            <Button variant="primary" size="md">
+              Return to Sales Workspace
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">

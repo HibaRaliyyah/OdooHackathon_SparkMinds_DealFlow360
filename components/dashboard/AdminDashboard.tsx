@@ -19,13 +19,53 @@ import {
   RefreshCw,
   BarChart3,
   CheckCircle2,
+  Clock,
+  UserCheck,
+  ArrowRight,
+  Eye,
 } from 'lucide-react';
 
 export function AdminDashboard() {
-  const { users, tierPolicies, productCategories, products, warehouses, subscriptions, auditEvents, dealHealthFlags, resetDemoData } = useStore();
+  const {
+    users,
+    tierPolicies,
+    productCategories,
+    products,
+    warehouses,
+    subscriptions,
+    auditEvents,
+    dealHealthFlags,
+    approvalRequests,
+  } = useStore();
 
-  const activeUsers = users.length;
-  const criticalFlags = dealHealthFlags.filter((f) => f.severity === 'HIGH').length;
+  const pendingApprovals = approvalRequests.filter((r) => r.status === 'Pending');
+
+  // Helper to display authorized approver role & assigned person based on RBAC matrix
+  const getAuthorizedApprover = (req: typeof approvalRequests[0]) => {
+    if (req.status === 'Approved' || req.status === 'Rejected') {
+      const lastAction = req.actions && req.actions.length > 0 ? req.actions[req.actions.length - 1] : null;
+      if (lastAction) {
+        return `Completed by ${lastAction.userName} (${lastAction.userRole})`;
+      }
+      return req.status === 'Approved' ? 'Completed (Approved)' : 'Completed (Rejected)';
+    }
+
+    if (req.status === 'Auto-Approved' || req.stage === 'Auto-Approved') {
+      return 'System Auto-Rules Engine (Level 0)';
+    }
+
+    if (req.stage === 'Sales Manager') {
+      const manager = users.find((u) => u.role === 'SALES_MANAGER');
+      return `Step 1: Sales Manager (${manager ? manager.name : 'Mihail Shah'})`;
+    }
+
+    if (req.stage === 'Finance') {
+      const financeUser = users.find((u) => u.role === 'FINANCE');
+      return `Step 2: Finance / Operations (${financeUser ? financeUser.name : 'Riya Iyer'})`;
+    }
+
+    return 'Authorized System Approver';
+  };
 
   return (
     <div className="space-y-8">
@@ -45,19 +85,19 @@ export function AdminDashboard() {
               Backend Configuration & Platform-Wide Analytics
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Configure products, price lists, discount tiers, warehouses, and subscription plans, while monitoring platform-wide analytics and audit telemetry.
+              Configure master products, price lists, discount tiers, warehouses, and subscription plans, while monitoring platform-wide analytics and approval governance.
             </p>
 
             {/* Admin Duties Checklist */}
             <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-slate-800 text-xs text-slate-300">
               <span className="flex items-center gap-1.5 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Products & Price Lists
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Master Products & Price Lists
               </span>
               <span className="flex items-center gap-1.5 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Discount Tiers & Warehouses
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Discount Ceilings & Warehouses
               </span>
               <span className="flex items-center gap-1.5 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Subscription Plans & SLA
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Approval Routing & Risk Governance
               </span>
               <span className="flex items-center gap-1.5 text-[11px]">
                 <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" /> Platform-Wide Reporting
@@ -136,22 +176,81 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* KPI 4: Subscriptions */}
+        {/* KPI 4: Pending Approvals Monitored */}
         <div className="card p-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-purple-500/40">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Subscription Plans</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Monitored Approvals</span>
             <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/20">
-              <RefreshCw className="w-4 h-4" />
+              <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="my-4">
-            <div className="text-3xl font-black font-mono text-purple-300 tracking-tight">{subscriptions.length} Plans</div>
-            <div className="text-xs text-purple-300 font-semibold mt-2">Recurring Billing & Care Plans</div>
+            <div className="text-3xl font-black font-mono text-purple-300 tracking-tight">{pendingApprovals.length} Pending</div>
+            <div className="text-xs text-purple-300 font-semibold mt-2">Routed to Manager / Finance</div>
           </div>
           <div className="pt-2 border-t border-slate-800 flex justify-between text-[11px] text-slate-400">
-            <span>Proration Engine</span>
-            <Link href="/subscriptions" className="text-purple-400 hover:underline">Manage Plans →</Link>
+            <span>RBAC Matrix Enforced</span>
+            <Link href="/approvals" className="text-purple-400 hover:underline">Approvals Hub →</Link>
           </div>
+        </div>
+      </div>
+
+      {/* ─── QUOTATION APPROVALS & AUTHORIZED APPROVERS SECTION ─── */}
+      <div className="card p-6 bg-[var(--bg-card)] border border-indigo-500/20 shadow-xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-400" /> Quotation Approvals & Authorized Approvers
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Monitors active quotation approval routing and designated operational approvers (Step 1: Sales Manager, Step 2: Finance / Operations).
+            </p>
+          </div>
+          <Badge variant="neutral">{approvalRequests.length} Total Monitored</Badge>
+        </div>
+
+        <div className="space-y-3">
+          {approvalRequests.map((req) => {
+            const authorizedRoleStr = getAuthorizedApprover(req);
+
+            return (
+              <div
+                key={req.id}
+                className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-slate-700"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Link href={`/quotations/${req.quotationId}`} className="font-mono text-sm font-extrabold text-white hover:text-indigo-400">
+                      Quote {req.quotationNumber}
+                    </Link>
+                    <span className="text-xs text-slate-400">— {req.customerName}</span>
+                    <Badge variant={req.riskLevel === 'HIGH' ? 'danger' : 'warning'}>
+                      Score: {req.riskScore}/100 ({req.riskLevel})
+                    </Badge>
+                  </div>
+
+                  {/* Authorized Approver Display */}
+                  <div className="flex items-center gap-2 text-xs text-slate-300">
+                    <UserCheck className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                    <span>Authorized Approver:</span>
+                    <strong className="text-indigo-300 font-mono">{authorizedRoleStr}</strong>
+                  </div>
+                </div>
+
+                {/* Inspect Link & Approval Status Badge (No Direct Approve/Reject Buttons in Admin View) */}
+                <div className="flex items-center gap-3">
+                  <Badge variant={req.status === 'Approved' || req.status === 'Auto-Approved' ? 'success' : req.status === 'Rejected' ? 'danger' : 'warning'}>
+                    {req.status}
+                  </Badge>
+                  <Link href={`/quotations/${req.quotationId}`}>
+                    <Button size="sm" variant="outline" leftIcon={<Eye className="w-3.5 h-3.5" />}>
+                      Inspect Quote
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 

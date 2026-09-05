@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/data/store';
 import { Table } from '@/components/ui/Table';
@@ -11,9 +11,16 @@ import { Plus, Search, LayoutGrid, ListFilter, ArrowRight } from 'lucide-react';
 import type { QuotationStage } from '@/lib/types';
 
 export default function QuotationsListPage() {
-  const { quotations } = useStore();
+  const { quotations, currentUser } = useStore();
+  const [mounted, setMounted] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list');
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isSalesRep = mounted && currentUser?.role === 'SALES_REP';
 
   const filtered = quotations.filter(
     (q) =>
@@ -64,11 +71,13 @@ export default function QuotationsListPage() {
             </button>
           </div>
 
-          <Link href="/quotations/new">
-            <Button variant="primary" size="md" leftIcon={<Plus className="w-4 h-4" />}>
-              Create Quotation
-            </Button>
-          </Link>
+          {isSalesRep && (
+            <Link href="/quotations/new">
+              <Button variant="primary" size="md" leftIcon={<Plus className="w-4 h-4" />}>
+                Create Quotation
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 

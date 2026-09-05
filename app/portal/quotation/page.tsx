@@ -18,9 +18,13 @@ import {
 } from 'lucide-react';
 
 export default function CustomerQuotationPortalPage() {
-  const { quotations, addNegotiation, updateQuotation, addApprovalRequest, addActivity, addNotification } = useStore();
+  const { currentUser, customers, quotations, addNegotiation, updateQuotation, addApprovalRequest, addActivity, addNotification } = useStore();
 
-  const quotation = quotations[0]; // Seeded quotation Q-1042
+  const customerQuotation = currentUser?.company
+    ? quotations.find((q) => q.customerName.toLowerCase().includes(currentUser.company?.toLowerCase() || ''))
+    : null;
+
+  const quotation = customerQuotation || quotations[0]; // Active Customer Quotation
   const totalDealVal = quotation ? quotation.oneTimeTotal + quotation.recurringTotal : 34420;
 
   const [counterDiscount, setCounterDiscount] = useState<number>(18);
