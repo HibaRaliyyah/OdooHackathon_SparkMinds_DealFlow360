@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function CustomerQuotationPortalPage() {
-  const { currentUser, customers, quotations, addNegotiation, updateQuotation, addApprovalRequest, addActivity, addNotification } = useStore();
+  const { currentUser, customers, quotations, invoices, updateInvoice, addNegotiation, updateQuotation, addApprovalRequest, addActivity, addNotification } = useStore();
 
   const customerQuotation = currentUser?.company
     ? quotations.find((q) => q.customerName.toLowerCase().includes(currentUser.company?.toLowerCase() || ''))
@@ -127,13 +127,37 @@ export default function CustomerQuotationPortalPage() {
     } else {
       updateQuotation(quotation.id, { stage: 'Confirmed' });
       setConfirmedStatus('fulfillment');
+
+      // Update matching invoice status to PAID upon customer payment confirmation
+      const matchingInv = invoices.find(
+        (i) => i.quotationNumber === quotation.quoteNumber || i.customerName === quotation.customerName
+      );
+      if (matchingInv && matchingInv.status !== 'Paid') {
+        updateInvoice(matchingInv.id, {
+          status: 'Paid',
+          paidAmount: matchingInv.total,
+          payments: [
+            ...matchingInv.payments,
+            {
+              id: `pay-cust-${Date.now()}`,
+              invoiceId: matchingInv.id,
+              amount: matchingInv.total - matchingInv.paidAmount,
+              currency: 'USD',
+              paymentDate: new Date().toISOString().slice(0, 10),
+              method: matchingInv.type === 'Recurring' ? 'Credit Card' : 'Bank Transfer',
+              reference: `CUST-ONLINE-${Date.now()}`,
+              status: 'Confirmed',
+            },
+          ],
+        });
+      }
     }
 
     addActivity({
       id: `act-${Date.now()}`,
       type: 'negotiation',
-      message: `${quotation.customerName} confirmed quotation online. ${
-        exceedsThreshold ? 'Re-entered approval flow (B4) due to discount threshold breach.' : 'Moved directly to warehouse fulfillment.'
+      message: `${quotation.customerName} submitted online payment & confirmed quotation. ${
+        exceedsThreshold ? 'Re-entered approval flow (B4) due to discount threshold breach.' : 'Moved to fulfillment and invoice status updated to PAID.'
       }`,
       relatedTo: quotation.id,
       timestamp: new Date().toISOString(),

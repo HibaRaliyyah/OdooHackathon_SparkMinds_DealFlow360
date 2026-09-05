@@ -134,29 +134,6 @@ export default function InvoicesPage() {
     showNotification(`New ${newType} Invoice ${newInvoiceNumber} created successfully!`, 'success');
   };
 
-  // Handle Mark as Paid
-  const handleMarkAsPaid = (inv: Invoice) => {
-    updateInvoice(inv.id, {
-      status: 'Paid',
-      paidAmount: inv.total,
-      payments: [
-        ...inv.payments,
-        {
-          id: `pay-${Date.now()}`,
-          invoiceId: inv.id,
-          amount: inv.total - inv.paidAmount,
-          currency: 'USD',
-          paymentDate: new Date().toISOString().slice(0, 10),
-          method: inv.type === 'Recurring' ? 'Credit Card' : 'Bank Transfer',
-          reference: `PAY-MANUAL-${Date.now()}`,
-          status: 'Confirmed',
-        },
-      ],
-    });
-    setSelectedInvoice(null);
-    showNotification(`Invoice ${inv.invoiceNumber} status updated to PAID!`, 'success');
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Header */}
@@ -460,17 +437,6 @@ export default function InvoicesPage() {
                 >
                   Download XLS
                 </Button>
-
-                {selectedInvoice.status !== 'Paid' && (
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    onClick={() => handleMarkAsPaid(selectedInvoice)}
-                    leftIcon={<CheckCircle2 className="w-4 h-4" />}
-                  >
-                    Mark as Paid
-                  </Button>
-                )}
               </div>
             </div>
 
