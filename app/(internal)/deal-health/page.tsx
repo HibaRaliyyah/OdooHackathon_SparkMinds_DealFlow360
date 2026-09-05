@@ -31,7 +31,7 @@ import type { DealHealthFlag } from '@/lib/types';
 export default function DealHealthPage() {
   const { dealHealthFlags, quotations, addActivity, addNotification, currentUser } = useStore();
 
-  const canTriggerNudge = currentUser?.role === 'SALES_MANAGER' || currentUser?.role === 'ADMIN';
+  const canTriggerNudge = currentUser?.role === 'ADMIN';
 
   // Active Notice Banner
   const [escalatedNotice, setEscalatedNotice] = useState('');
@@ -106,34 +106,34 @@ export default function DealHealthPage() {
     const q = quotations.find((item) => item.id === f.quotationId);
     const repName = q?.assignedTo || 'Jasmine Rao';
 
-    if (!canTriggerNudge) {
-      // Sales Rep view: Nudges are submitted to the rep to follow up & evaluate
-      if (f.severity === 'HIGH') {
-        return {
-          text: 'Escalated to Sales Manager — Under Review',
-          variant: 'rose',
-        };
-      }
-      return {
-        text: 'Nudge Submitted to Rep to Evaluate',
-        variant: 'amber',
-      };
-    }
-
-    // Manager / Admin view
-    const isDispatched = dispatchedFlags[f.id] || f.actionTaken;
-    if (isDispatched) {
+    if (dispatchedFlags[f.id] || f.actionTaken) {
       return {
         text: dispatchedFlags[f.id] || f.actionTaken || `Nudge sent to ${repName}`,
         variant: 'emerald',
       };
     }
+
+    if (currentUser?.role === 'SALES_REP') {
+      if (f.severity === 'HIGH') {
+        return {
+          text: 'Escalated to Sales Manager',
+          variant: 'emerald',
+        };
+      }
+      return {
+        text: 'Nudge Submitted to Rep to Evaluate',
+        variant: 'emerald',
+      };
+    }
+
+    // Sales Manager / Admin view without trigger button
     if (f.severity === 'HIGH') {
       return {
         text: 'Escalated to Sales Manager',
-        variant: 'rose',
+        variant: 'emerald',
       };
     }
+
     return {
       text: `Nudge sent to ${repName}`,
       variant: 'emerald',
@@ -313,7 +313,7 @@ export default function DealHealthPage() {
                   <div className="flex items-center gap-2">
                     {canTriggerNudge ? (
                       dispatchedFlags[f.id] || f.actionTaken ? (
-                        <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 cursor-default select-none">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 cursor-default select-none">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                           <span>{dispatchedFlags[f.id] || f.actionTaken}</span>
                         </span>
@@ -352,18 +352,8 @@ export default function DealHealthPage() {
                         </Button>
                       )
                     ) : (
-                      <span
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-default select-none border ${
-                          statusInfo.variant === 'rose'
-                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
-                            : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
-                        }`}
-                      >
-                        {statusInfo.variant === 'rose' ? (
-                          <AlertOctagon className="w-3.5 h-3.5 text-rose-400" />
-                        ) : (
-                          <Clock className="w-3.5 h-3.5 text-amber-400" />
-                        )}
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 cursor-default select-none">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                         <span>{statusInfo.text}</span>
                       </span>
                     )}
