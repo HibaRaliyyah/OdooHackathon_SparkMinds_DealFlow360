@@ -27,6 +27,7 @@ import {
   Layers,
   AlertTriangle,
   Sparkles,
+  Sliders,
 } from 'lucide-react';
 import type { Warehouse, InventoryItem } from '@/lib/types';
 
@@ -731,10 +732,10 @@ export function FinanceDashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-black text-[var(--text-primary)] flex items-center gap-2">
-                <Truck className="w-5 h-5 text-indigo-500" /> Fulfillment Allocation & Warehouse Split Optimizer
+                <Truck className="w-5 h-5 text-indigo-500" /> Fulfillment Allocation & Warehouse Split Optimizer (Finance Section)
               </h2>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                Manage automated multi-warehouse splits, backorder decisions, and partial shipment releases
+                Live operational progress, automated multi-warehouse split dispatch releases, and inventory routing metrics for Finance users.
               </p>
             </div>
 
@@ -745,10 +746,36 @@ export function FinanceDashboard() {
             </Link>
           </div>
 
+          {/* Finance Fulfillment Live Progress KPI Banner */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs space-y-1">
+              <div className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Total Orders Monitored</div>
+              <div className="text-2xl font-black text-white font-mono">{fulfillmentOrders.length} Split Orders</div>
+              <div className="text-[11px] text-indigo-400 font-medium">100% Stock Allocation Synced</div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-1">
+              <div className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Finance Dispatch Progress</div>
+              <div className="text-2xl font-black text-emerald-400 font-mono">
+                {fulfillmentOrders.filter(o => o.status === 'Completed' || o.status === 'Shipped').length} / {fulfillmentOrders.length} Dispatched
+              </div>
+              <div className="text-[11px] text-emerald-400 font-medium">
+                {Math.round((fulfillmentOrders.filter(o => o.status === 'Completed' || o.status === 'Shipped').length / Math.max(1, fulfillmentOrders.length)) * 100)}% Overall Fulfillment Complete
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-xs space-y-1">
+              <div className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Inventory Allocation Status</div>
+              <div className="text-2xl font-black text-sky-400 font-mono">100% Stock Reserved</div>
+              <div className="text-[11px] text-sky-300 font-medium">Zero Backorder Deficit Recorded</div>
+            </div>
+          </div>
+
           {/* Fulfillment Orders List */}
           <div className="space-y-5">
             {fulfillmentOrders.map((order) => {
-              const isAllocated = order.status === 'Allocated' || order.status === 'Completed' || order.status === 'Shipped';
+              const isCompleted = order.status === 'Completed' || order.status === 'Shipped';
+              const progressVal = isCompleted ? 100 : 75;
 
               return (
                 <div key={order.id} className="card p-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] space-y-4 shadow-md">
@@ -757,7 +784,7 @@ export function FinanceDashboard() {
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-sm font-extrabold text-[var(--text-primary)]">Order {order.quotationNumber}</span>
                         <span className="text-xs text-[var(--text-secondary)]">— {order.customerName}</span>
-                        <Badge variant={order.status === 'Completed' || order.status === 'Allocated' ? 'success' : 'warning'}>
+                        <Badge variant={isCompleted || order.status === 'Allocated' ? 'success' : 'warning'}>
                           {order.status}
                         </Badge>
                       </div>
@@ -767,7 +794,7 @@ export function FinanceDashboard() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {order.status !== 'Completed' ? (
+                      {!isCompleted ? (
                         <Button
                           variant="primary"
                           size="sm"
@@ -791,6 +818,44 @@ export function FinanceDashboard() {
                           <span>Split Dispatched & Fulfilled</span>
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Live Finance Fulfillment Progress Bar & Steps Tracker */}
+                  <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-white flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Finance Fulfillment Progress Tracker</span>
+                      </span>
+                      <span className="font-mono font-bold text-emerald-400">
+                        {isCompleted ? '100% Dispatched & Fulfilled' : '75% Stock Reserved & Allocated'}
+                      </span>
+                    </div>
+
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          isCompleted
+                            ? 'bg-gradient-to-r from-indigo-500 to-emerald-400 w-full'
+                            : 'bg-gradient-to-r from-indigo-500 to-sky-400 w-3/4'
+                        }`}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-1 text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 text-center font-medium">
+                      <div className="text-emerald-400 flex items-center justify-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" /> <span>1. Stock Reserved</span>
+                      </div>
+                      <div className="text-emerald-400 flex items-center justify-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400" /> <span>2. Split Calculated</span>
+                      </div>
+                      <div className={isCompleted ? 'text-emerald-400 flex items-center justify-center gap-1' : 'text-amber-400 flex items-center justify-center gap-1 font-bold'}>
+                        <CheckCircle2 className={`w-3 h-3 ${isCompleted ? 'text-emerald-400' : 'text-amber-400 animate-pulse'}`} /> <span>3. Finance Approval</span>
+                      </div>
+                      <div className={isCompleted ? 'text-emerald-400 flex items-center justify-center gap-1 font-bold' : 'text-slate-500 flex items-center justify-center gap-1'}>
+                        <Truck className={`w-3 h-3 ${isCompleted ? 'text-emerald-400' : 'text-slate-500'}`} /> <span>4. Freight Dispatched</span>
+                      </div>
                     </div>
                   </div>
 

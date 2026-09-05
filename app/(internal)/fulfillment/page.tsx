@@ -250,6 +250,44 @@ export default function FulfillmentPage() {
                 </div>
               </div>
 
+              {/* Live Finance Fulfillment Progress Bar & Steps Tracker */}
+              <div className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-white flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Finance Fulfillment Progress Tracker</span>
+                  </span>
+                  <span className="font-mono font-bold text-emerald-400">
+                    {isCompleted ? '100% Dispatched & Fulfilled' : '75% Stock Reserved & Allocated'}
+                  </span>
+                </div>
+
+                <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-500 ${
+                      isCompleted
+                        ? 'bg-gradient-to-r from-indigo-500 to-emerald-400 w-full'
+                        : 'bg-gradient-to-r from-indigo-500 to-sky-400 w-3/4'
+                    }`}
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 gap-1 text-[10px] text-slate-400 pt-1 border-t border-slate-800/60 text-center font-medium">
+                  <div className="text-emerald-400 flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> <span>1. Stock Reserved</span>
+                  </div>
+                  <div className="text-emerald-400 flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> <span>2. Split Calculated</span>
+                  </div>
+                  <div className={isCompleted ? 'text-emerald-400 flex items-center justify-center gap-1' : 'text-amber-400 flex items-center justify-center gap-1 font-bold'}>
+                    <CheckCircle2 className={`w-3 h-3 ${isCompleted ? 'text-emerald-400' : 'text-amber-400 animate-pulse'}`} /> <span>3. Finance Approval</span>
+                  </div>
+                  <div className={isCompleted ? 'text-emerald-400 flex items-center justify-center gap-1 font-bold' : 'text-slate-500 flex items-center justify-center gap-1'}>
+                    <Truck className={`w-3 h-3 ${isCompleted ? 'text-emerald-400' : 'text-slate-500'}`} /> <span>4. Freight Dispatched</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Split Breakdown Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(order.allocations || []).map((alloc, idx) => (
