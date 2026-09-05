@@ -1,13 +1,14 @@
 // ============================================================
-// DealFlow360 — Document & Report Exporter Utility
-// Provides direct browser downloads for PDF/HTML & XLS/CSV documents
-// without popup blocker issues.
+// DealFlow360 — Direct PDF & XLS Exporter Utility
+// Uses jsPDF for 100% native client-side PDF document generation
+// and direct file downloads without display/print popups.
 // ============================================================
 
+import { jsPDF } from 'jspdf';
 import type { Invoice, Quotation, Subscription } from '@/lib/types';
 
 /**
- * Triggers direct browser download for a Blob content file
+ * Triggers direct browser download for a text/CSV/Blob file
  */
 export function triggerDirectDownload(content: string, fileName: string, mimeType: string) {
   const blob = new Blob([content], { type: mimeType });
@@ -22,41 +23,147 @@ export function triggerDirectDownload(content: string, fileName: string, mimeTyp
 }
 
 /**
- * Direct print-to-PDF via hidden iframe (avoids popup blockers completely)
+ * ------------------------------------------------------------
+ * 1. INVOICE EXPORTS (PDF & XLS)
+ * ------------------------------------------------------------
  */
-export function printHtmlDocument(htmlContent: string) {
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  iframe.style.zIndex = '-9999';
-  document.body.appendChild(iframe);
+export function downloadInvoicePDF(invoice: Invoice) {
+  const doc = new jsPDF();
+  const balanceDue = (invoice.total || 0) - (invoice.paidAmount || 0);
 
-  const doc = iframe.contentDocument || iframe.contentWindow?.document;
-  if (doc) {
-    doc.open();
-    doc.write(htmlContent);
-    doc.close();
-    setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
-        }
-      }, 2000);
-    }, 300);
-  }
+  // Header Banner
+  doc.setFillColor(79, 70, 229); // Indigo-600
+  doc.rect(0, 0, 210, 24, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(255, 255, 255);
+  doc.text('DEALFLOW360', 14, 15);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('ENTERPRISE B2B CPQ & BILLING PLATFORM', 70, 15);
+
+  // Invoice Title & Metadata Block
+  let y = 36;
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('OFFICIAL INVOICE', 14, y);
+
+  doc.setFontSize(11);
+  doc.setTextColor(79, 70, 229);
+  doc.text(`Invoice #: ${invoice.invoiceNumber || invoice.id}`, 14, y + 7);
+
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Date Issued: ${invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : 'N/A'}`, 140, y);
+  doc.text(`Due Date: ${invoice.dueDate || 'Net 30'}`, 140, y + 6);
+  doc.text(`Status: ${(invoice.status || 'Pending').toUpperCase()}`, 140, y + 12);
+
+  // Customer & Terms Card
+  y += 22;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(14, y, 182, 26, 3, 3, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text('BILLED TO (CUSTOMER):', 18, y + 8);
+  doc.setFontSize(12);
+  doc.setTextColor(15, 23, 42);
+  doc.text(invoice.customerName || 'Valued Enterprise Client', 18, y + 17);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(100, 116, 139);
+  doc.text('QUOTATION REF:', 120, y + 8);
+  doc.setFontSize(10);
+  doc.setTextColor(15, 23, 42);
+  doc.text(invoice.quotationNumber || 'N/A', 120, y + 17);
+
+  // Line Items Table Header
+  y += 34;
+  doc.setFillColor(15, 23, 42);
+  doc.rect(14, y, 182, 8, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  doc.text('PRODUCT / SERVICE DESCRIPTION', 18, y + 5.5);
+  doc.text('QTY', 115, y + 5.5);
+  doc.text('UNIT PRICE', 135, y + 5.5);
+  doc.text('DISCOUNT', 160, y + 5.5);
+  doc.text('TOTAL', 180, y + 5.5);
+
+  // Line Items Rows
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 65, 85);
+  doc.setFontSize(8.5);
+
+  const items = invoice.items && invoice.items.length > 0 ? invoice.items : [
+    { productName: 'Standard Billing Deliverable', billedQty: 1, unitPrice: invoice.total || 0, discount: 0, lineTotal: invoice.total || 0 }
+  ];
+
+  items.forEach((item: any) => {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(14, y, 182, 8, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, y + 8, 196, y + 8);
+
+    const title = (item.productName || 'Service Item').slice(0, 50);
+    const qty = item.billedQty || item.orderedQty || 1;
+    const price = `$${(item.unitPrice || 0).toFixed(2)}`;
+    const disc = `$${(item.discount || 0).toFixed(2)}`;
+    const total = `$${(item.lineTotal || 0).toFixed(2)}`;
+
+    doc.text(title, 18, y + 5.5);
+    doc.text(String(qty), 117, y + 5.5);
+    doc.text(price, 135, y + 5.5);
+    doc.text(disc, 160, y + 5.5);
+    doc.text(total, 180, y + 5.5);
+
+    y += 8;
+  });
+
+  // Totals Summary Box
+  y += 6;
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(110, y, 86, 36, 3, 3, 'FD');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+
+  doc.text('Subtotal:', 115, y + 8);
+  doc.text(`$${(invoice.subtotal || 0).toFixed(2)}`, 188, y + 8, { align: 'right' });
+
+  doc.text('Discount:', 115, y + 15);
+  doc.text(`-$${(invoice.discount || 0).toFixed(2)}`, 188, y + 15, { align: 'right' });
+
+  doc.text('Sales Tax:', 115, y + 22);
+  doc.text(`+$${(invoice.tax || 0).toFixed(2)}`, 188, y + 22, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(5, 150, 105);
+  doc.text('Grand Total:', 115, y + 31);
+  doc.text(`$${(invoice.total || 0).toFixed(2)}`, 188, y + 31, { align: 'right' });
+
+  // Footer Note
+  y += 48;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(148, 163, 184);
+  doc.text('DealFlow360 Enterprise B2B Ops · Thank you for your business!', 105, y, { align: 'center' });
+
+  // DIRECT DOWNLOAD FILE (.pdf)
+  doc.save(`${invoice.invoiceNumber || invoice.id}_Invoice.pdf`);
 }
 
-/**
- * ------------------------------------------------------------
- * 1. INVOICE EXPORTS
- * ------------------------------------------------------------
- */
 export function downloadInvoiceXLS(invoice: Invoice) {
   const lineItemsRows = (invoice.items || []).map((item) => [
     `"${(item.productName || '').replace(/"/g, '""')}"`,
@@ -112,137 +219,7 @@ export function downloadInvoiceXLS(invoice: Invoice) {
   ];
 
   const csvContent = '\uFEFF' + csvRows.map((row) => row.join(',')).join('\n');
-  triggerDirectDownload(csvContent, `${invoice.invoiceNumber || invoice.id}_Billing_Export.xls`, 'application/vnd.ms-excel;charset=utf-8;');
-}
-
-export function downloadInvoicePDF(invoice: Invoice) {
-  const balanceDue = (invoice.total || 0) - (invoice.paidAmount || 0);
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <title>Invoice ${invoice.invoiceNumber || invoice.id} — DealFlow360</title>
-      <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { padding: 40px; color: #0f172a; background: #ffffff; margin: 0; }
-        .invoice-box { max-width: 850px; margin: auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 12px; }
-        .header-row { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #4f46e5; padding-bottom: 20px; margin-bottom: 25px; }
-        .brand-title { font-size: 26px; font-weight: 900; color: #4f46e5; letter-spacing: -0.5px; }
-        .brand-sub { font-size: 12px; color: #64748b; margin-top: 4px; font-weight: 600; }
-        .invoice-title { font-size: 24px; font-weight: 900; text-align: right; color: #0f172a; }
-        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; background: #f8fafc; padding: 18px; border-radius: 8px; margin-bottom: 25px; font-size: 13px; }
-        .meta-group h4 { margin: 0 0 6px 0; font-size: 11px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; }
-        .meta-group p { margin: 0; font-weight: 700; color: #1e293b; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 13px; }
-        th { background: #f1f5f9; text-align: left; padding: 12px 10px; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 800; border-bottom: 2px solid #cbd5e1; }
-        td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; color: #334155; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .summary-box { width: 320px; margin-left: auto; background: #f8fafc; border-radius: 8px; padding: 16px; margin-bottom: 25px; font-size: 13px; border: 1px solid #e2e8f0; }
-        .summary-line { display: flex; justify-content: space-between; padding: 6px 0; color: #475569; }
-        .summary-total { font-size: 16px; font-weight: 900; color: #059669; border-top: 2px solid #0f172a; padding-top: 10px; margin-top: 6px; }
-        .footer { text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 30px; }
-        @media print {
-          body { padding: 0; }
-          .invoice-box { border: none; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="invoice-box">
-        <div class="header-row">
-          <div>
-            <div class="brand-title">DealFlow360</div>
-            <div class="brand-sub">Enterprise B2B CPQ & Billing Platform</div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 4px;">100 Enterprise Way, Suite 400, San Francisco CA</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="invoice-title">INVOICE DOCUMENT</div>
-            <div style="font-size: 16px; font-weight: 800; color: #4f46e5; font-family: monospace; margin-top: 2px;">
-              ${invoice.invoiceNumber || invoice.id}
-            </div>
-          </div>
-        </div>
-
-        <div class="meta-grid">
-          <div class="meta-group">
-            <h4>Billed To (Customer)</h4>
-            <p style="font-size: 15px; color: #0f172a;">${invoice.customerName || 'Customer'}</p>
-            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Ref Quotation: <strong>${invoice.quotationNumber || 'N/A'}</strong></div>
-          </div>
-          <div class="meta-group" style="text-align: right;">
-            <h4>Invoice Schedule & Status</h4>
-            <p>Due Date: <span style="color: #dc2626;">${invoice.dueDate || 'Net 30'}</span></p>
-            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
-              Status: <strong style="color: ${invoice.status === 'Paid' ? '#059669' : '#d97706'};">${(invoice.status || 'Pending').toUpperCase()}</strong>
-            </div>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Product / Service Description</th>
-              <th class="text-center">Qty</th>
-              <th class="text-right">Unit Price</th>
-              <th class="text-right">Discount</th>
-              <th class="text-right">Line Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(invoice.items || [])
-              .map(
-                (item) => `
-              <tr>
-                <td><strong>${item.productName || 'Service Item'}</strong></td>
-                <td class="text-center">${item.billedQty || item.orderedQty || 1}</td>
-                <td class="text-right">$${(item.unitPrice || 0).toFixed(2)}</td>
-                <td class="text-right">$${(item.discount || 0).toFixed(2)}</td>
-                <td class="text-right"><strong>$${(item.lineTotal || 0).toFixed(2)}</strong></td>
-              </tr>
-            `
-              )
-              .join('')}
-          </tbody>
-        </table>
-
-        <div class="summary-box">
-          <div class="summary-line">
-            <span>Subtotal:</span>
-            <span>$${(invoice.subtotal || 0).toFixed(2)}</span>
-          </div>
-          <div class="summary-line">
-            <span>Discount:</span>
-            <span>-$${(invoice.discount || 0).toFixed(2)}</span>
-          </div>
-          <div class="summary-line">
-            <span>Tax:</span>
-            <span>+$${(invoice.tax || 0).toFixed(2)}</span>
-          </div>
-          <div class="summary-line summary-total">
-            <span>Total Amount:</span>
-            <span>$${(invoice.total || 0).toFixed(2)}</span>
-          </div>
-          <div class="summary-line" style="font-weight: 800; border-top: 1px solid #cbd5e1; padding-top: 6px; margin-top: 4px;">
-            <span>Balance Due:</span>
-            <span>$${balanceDue.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div class="footer">
-          Thank you for doing business with DealFlow360 Enterprise B2B Ops. For questions, contact billing@dealflow360.demo.
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  // 1. Direct file download
-  triggerDirectDownload(htmlContent, `${invoice.invoiceNumber || invoice.id}_Invoice_Document.html`, 'text/html;charset=utf-8;');
-  // 2. Direct browser print dialog
-  printHtmlDocument(htmlContent);
+  triggerDirectDownload(csvContent, `${invoice.invoiceNumber || invoice.id}_Billing_Export.csv`, 'text/csv;charset=utf-8;');
 }
 
 export function exportAllInvoicesXLS(invoices: Invoice[]) {
@@ -273,14 +250,123 @@ export function exportAllInvoicesXLS(invoices: Invoice[]) {
   ]);
 
   const csvContent = '\uFEFF' + [header, ...rows].map((row) => row.join(',')).join('\n');
-  triggerDirectDownload(csvContent, `DealFlow360_All_Invoices_Report_${new Date().toISOString().slice(0, 10)}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
+  triggerDirectDownload(csvContent, `DealFlow360_All_Invoices_Report_${new Date().toISOString().slice(0, 10)}.csv`, 'text/csv;charset=utf-8;');
 }
 
 /**
  * ------------------------------------------------------------
- * 2. QUOTATION EXPORTS
+ * 2. QUOTATION EXPORTS (PDF & XLS)
  * ------------------------------------------------------------
  */
+export function downloadQuotationPDF(quotation: Quotation) {
+  const doc = new jsPDF();
+  const totalValue = (quotation.oneTimeTotal || 0) + (quotation.recurringTotal || 0);
+
+  // Header Banner
+  doc.setFillColor(99, 102, 241); // Indigo-500
+  doc.rect(0, 0, 210, 24, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(255, 255, 255);
+  doc.text('DEALFLOW360', 14, 15);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('COMMERCIAL PROPOSAL & QUOTATION DOCUMENT', 70, 15);
+
+  // Title Block
+  let y = 36;
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(18);
+  doc.setFont('helvetica', 'bold');
+  doc.text('OFFICIAL PROPOSAL', 14, y);
+
+  doc.setFontSize(11);
+  doc.setTextColor(99, 102, 241);
+  doc.text(`Quotation #: ${quotation.quoteNumber}`, 14, y + 7);
+
+  doc.setTextColor(100, 116, 139);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Stage: ${quotation.stage}`, 140, y);
+  doc.text(`Blended Risk: ${quotation.blendedRisk?.riskScore || 20}/100`, 140, y + 6);
+  doc.text(`Assigned Rep: ${quotation.assignedTo || 'Sales Representative'}`, 140, y + 12);
+
+  // Customer Card
+  y += 22;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(14, y, 182, 22, 3, 3, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text('PREPARED FOR CUSTOMER:', 18, y + 7);
+  doc.setFontSize(12);
+  doc.setTextColor(15, 23, 42);
+  doc.text(quotation.customerName || 'Valued Customer', 18, y + 16);
+
+  // Line Items Table Header
+  y += 28;
+  doc.setFillColor(15, 23, 42);
+  doc.rect(14, y, 182, 8, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+  doc.text('PRODUCT / ITEM DESCRIPTION', 18, y + 5.5);
+  doc.text('TYPE', 105, y + 5.5);
+  doc.text('QTY', 130, y + 5.5);
+  doc.text('UNIT PRICE', 148, y + 5.5);
+  doc.text('TOTAL', 178, y + 5.5);
+
+  // Rows
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 65, 85);
+  doc.setFontSize(8.5);
+
+  (quotation.items || []).forEach((item: any) => {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(14, y, 182, 8, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, y + 8, 196, y + 8);
+
+    doc.text((item.productName || 'Line Item').slice(0, 42), 18, y + 5.5);
+    doc.text(item.isSubscription ? 'Subscription' : 'One-Time', 105, y + 5.5);
+    doc.text(String(item.quantity || 1), 132, y + 5.5);
+    doc.text(`$${(item.unitPrice || 0).toFixed(2)}`, 148, y + 5.5);
+    doc.text(`$${(item.lineTotal || 0).toFixed(2)}`, 178, y + 5.5);
+
+    y += 8;
+  });
+
+  // Financial Summary Box
+  y += 6;
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(110, y, 86, 28, 3, 3, 'FD');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(71, 85, 105);
+
+  doc.text('One-Time Deliverables:', 115, y + 8);
+  doc.text(`$${(quotation.oneTimeTotal || 0).toFixed(2)}`, 188, y + 8, { align: 'right' });
+
+  doc.text('Recurring Subscriptions:', 115, y + 15);
+  doc.text(`$${(quotation.recurringTotal || 0).toFixed(2)}`, 188, y + 15, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(79, 70, 229);
+  doc.text('Grand Total:', 115, y + 24);
+  doc.text(`$${totalValue.toFixed(2)}`, 188, y + 24, { align: 'right' });
+
+  // DIRECT DOWNLOAD FILE (.pdf)
+  doc.save(`Proposal_${quotation.quoteNumber}.pdf`);
+}
+
 export function downloadQuotationXLS(quotation: Quotation) {
   const lineItems = (quotation.items || []).map((item) => [
     `"${item.productId || ''}"`,
@@ -318,125 +404,7 @@ export function downloadQuotationXLS(quotation: Quotation) {
   ];
 
   const csvContent = '\uFEFF' + csvRows.map((row) => row.join(',')).join('\n');
-  triggerDirectDownload(csvContent, `Proposal_${quotation.quoteNumber}.xls`, 'application/vnd.ms-excel;charset=utf-8;');
-}
-
-export function downloadQuotationPDF(quotation: Quotation) {
-  const totalValue = (quotation.oneTimeTotal || 0) + (quotation.recurringTotal || 0);
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <title>Quotation ${quotation.quoteNumber} — DealFlow360</title>
-      <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { padding: 40px; color: #0f172a; background: #ffffff; margin: 0; }
-        .box { max-width: 850px; margin: auto; padding: 32px; border: 1px solid #e2e8f0; border-radius: 12px; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #6366f1; padding-bottom: 20px; margin-bottom: 24px; }
-        .title { font-size: 26px; font-weight: 900; color: #4f46e5; letter-spacing: -0.5px; }
-        .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; font-weight: 600; }
-        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #f8fafc; padding: 16px; border-radius: 8px; margin-bottom: 24px; font-size: 13px; }
-        .meta-item h4 { margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; color: #64748b; }
-        .meta-item p { margin: 0; font-weight: 700; color: #1e293b; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-        th { background: #f1f5f9; text-align: left; padding: 10px; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 800; border-bottom: 2px solid #cbd5e1; }
-        td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #334155; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .summary-box { width: 300px; margin-left: auto; background: #f8fafc; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; }
-        .summary-line { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #475569; }
-        .summary-total { font-size: 16px; font-weight: 900; color: #4f46e5; border-top: 2px solid #0f172a; padding-top: 8px; margin-top: 4px; }
-        .footer { text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 30px; }
-        @media print {
-          body { padding: 0; }
-          .box { border: none; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="box">
-        <div class="header">
-          <div>
-            <div class="title">DealFlow360</div>
-            <div class="subtitle">Official B2B Commercial Proposal & Quotation</div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 22px; font-weight: 900; color: #0f172a;">QUOTATION</div>
-            <div style="font-size: 16px; font-weight: 800; color: #4f46e5; font-family: monospace;">${quotation.quoteNumber}</div>
-          </div>
-        </div>
-
-        <div class="meta-grid">
-          <div class="meta-item">
-            <h4>Prepared For Customer</h4>
-            <p style="font-size: 15px;">${quotation.customerName}</p>
-            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Assigned Rep: <strong>${quotation.assignedTo || 'Sales Team'}</strong></div>
-          </div>
-          <div class="meta-item" style="text-align: right;">
-            <h4>Stage & Risk Rating</h4>
-            <p>Stage: <span style="color: #4f46e5;">${quotation.stage}</span></p>
-            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
-              Blended Risk Score: <strong>${quotation.blendedRisk?.riskScore || 20}/100 (${quotation.blendedRisk?.riskLevel || 'LOW'})</strong>
-            </div>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Item Description</th>
-              <th class="text-center">Type</th>
-              <th class="text-center">Qty</th>
-              <th class="text-right">Unit Price</th>
-              <th class="text-right">Discount</th>
-              <th class="text-right">Line Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(quotation.items || [])
-              .map(
-                (item) => `
-              <tr>
-                <td><strong>${item.productName || 'Line Item'}</strong></td>
-                <td class="text-center"><span style="font-size: 10px; background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${item.isSubscription ? 'Subscription' : 'One-Time'}</span></td>
-                <td class="text-center">${item.quantity || 1}</td>
-                <td class="text-right">$${(item.unitPrice || 0).toFixed(2)}</td>
-                <td class="text-right">${item.discount || 0}%</td>
-                <td class="text-right"><strong>$${(item.lineTotal || 0).toFixed(2)}</strong></td>
-              </tr>
-            `
-              )
-              .join('')}
-          </tbody>
-        </table>
-
-        <div class="summary-box">
-          <div class="summary-line">
-            <span>One-Time Charges:</span>
-            <span>$${(quotation.oneTimeTotal || 0).toFixed(2)}</span>
-          </div>
-          <div class="summary-line">
-            <span>Recurring Annual/Monthly:</span>
-            <span>$${(quotation.recurringTotal || 0).toFixed(2)}</span>
-          </div>
-          <div class="summary-line summary-total">
-            <span>Total Proposal Value:</span>
-            <span>$${totalValue.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div class="footer">
-          DealFlow360 Enterprise CPQ & Revenue Governance. Confidential document prepared for ${quotation.customerName}.
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
-
-  triggerDirectDownload(htmlContent, `Proposal_${quotation.quoteNumber}_Document.html`, 'text/html;charset=utf-8;');
-  printHtmlDocument(htmlContent);
+  triggerDirectDownload(csvContent, `Proposal_${quotation.quoteNumber}.csv`, 'text/csv;charset=utf-8;');
 }
 
 /**
@@ -445,84 +413,196 @@ export function downloadQuotationPDF(quotation: Quotation) {
  * ------------------------------------------------------------
  */
 export function downloadContractPDF(subscription: Subscription | any) {
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <title>Contract Agreement ${subscription.id || 'SUB-1001'} — DealFlow360</title>
-      <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { padding: 40px; color: #0f172a; background: #ffffff; margin: 0; }
-        .contract-box { max-width: 850px; margin: auto; padding: 36px; border: 1px solid #cbd5e1; border-radius: 12px; }
-        .header { border-bottom: 3px solid #0284c7; padding-bottom: 20px; margin-bottom: 24px; display: flex; justify-content: space-between; }
-        .title { font-size: 26px; font-weight: 900; color: #0284c7; }
-        .meta-box { background: #f0f9ff; border-left: 4px solid #0284c7; padding: 16px; margin-bottom: 24px; font-size: 13px; }
-        .section-title { font-size: 14px; font-weight: 800; color: #0f172a; text-transform: uppercase; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
-        ul { margin: 0; padding-left: 20px; font-size: 13px; color: #334155; }
-        li { margin-bottom: 6px; }
-        .signatures { display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; border-top: 1px solid #cbd5e1; font-size: 12px; }
-        .sig-block { width: 45%; }
-        .sig-line { border-bottom: 1px solid #0f172a; margin-top: 40px; margin-bottom: 6px; }
-      </style>
-    </head>
-    <body>
-      <div class="contract-box">
-        <div class="header">
-          <div>
-            <div class="title">DealFlow360</div>
-            <div style="font-size: 12px; color: #64748b; font-weight: bold; margin-top: 2px;">Master SaaS & Service Level Contract Agreement</div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 18px; font-weight: 900; color: #0f172a;">SERVICE CONTRACT</div>
-            <div style="font-size: 13px; font-family: monospace; color: #0284c7; font-weight: bold;">${subscription.id || 'CONTRACT-2026'}</div>
-          </div>
-        </div>
+  const doc = new jsPDF();
 
-        <div class="meta-box">
-          <strong>Subscriber Entity:</strong> ${subscription.customerName || 'Acme Corp'}<br>
-          <strong>Plan Tier:</strong> ${subscription.planName || 'Enterprise Cloud Tier'}<br>
-          <strong>Billing Frequency:</strong> ${subscription.billingCycle || 'Annual Prepaid'}<br>
-          <strong>Annual Contract Value (ACV):</strong> $${(subscription.amount || 24000).toLocaleString()}/year<br>
-          <strong>Contract Status:</strong> Active & Enforced (Auto-renews on ${subscription.nextBillingDate || '2027-08-31'})
-        </div>
+  // Header Banner
+  doc.setFillColor(2, 132, 199); // Sky-600
+  doc.rect(0, 0, 210, 24, 'F');
 
-        <div class="section-title">1. Scope of Enforced Services & Deliverables</div>
-        <ul>
-          ${(subscription.features || ['24/7 Dedicated Platinum SLA Support', 'Continuous Automated Multi-Warehouse Allocation', 'Full API Access & Webhook Suite', 'Quarterly Executive Business Reviews']).map((f: string) => `<li>${f}</li>`).join('')}
-        </ul>
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(255, 255, 255);
+  doc.text('DEALFLOW360', 14, 15);
 
-        <div class="section-title">2. Service Level Agreement (SLA) & Uptime Terms</div>
-        <p style="font-size: 13px; color: #334155; line-height: 1.6;">
-          DealFlow360 guarantees a monthly uptime SLA commitment of 99.95%. In the event of unscheduled downtime exceeding 0.05%, prorated credit credits will automatically apply to subsequent renewal billing cycles.
-        </p>
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('MASTER SAAS & SERVICE AGREEMENT', 80, 15);
 
-        <div class="signatures">
-          <div class="sig-block">
-            <div class="sig-line"></div>
-            <strong>Authorized Representative (DealFlow360 Inc.)</strong><br>
-            <span>Date: ${new Date().toLocaleDateString()}</span>
-          </div>
-          <div class="sig-block">
-            <div class="sig-line"></div>
-            <strong>Authorized Customer Signatory (${subscription.customerName || 'Acme Corp'})</strong><br>
-            <span>Date: ${new Date().toLocaleDateString()}</span>
-          </div>
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+  // Contract Details
+  let y = 36;
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SERVICE LEVEL CONTRACT AGREEMENT', 14, y);
 
-  triggerDirectDownload(htmlContent, `Contract_Agreement_${subscription.id || 'SUB-1001'}.html`, 'text/html;charset=utf-8;');
-  printHtmlDocument(htmlContent);
+  doc.setFontSize(10);
+  doc.setTextColor(2, 132, 199);
+  doc.text(`Contract Ref #: ${subscription.id || 'SUB-1001'}`, 14, y + 7);
+
+  y += 18;
+  doc.setFillColor(240, 249, 255);
+  doc.setDrawColor(186, 230, 253);
+  doc.roundedRect(14, y, 182, 34, 3, 3, 'FD');
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 65, 85);
+  doc.text(`Subscriber Entity: ${subscription.customerName || 'Acme Corp'}`, 18, y + 8);
+  doc.text(`Plan Tier: ${subscription.planName || 'Enterprise Cloud Tier'}`, 18, y + 15);
+  doc.text(`Billing Cycle: ${subscription.billingCycle || 'Annual Prepaid'}`, 18, y + 22);
+  doc.text(`Annual Contract Value (ACV): $${(subscription.amount || 24000).toLocaleString()}/year`, 18, y + 29);
+
+  // Section 1
+  y += 42;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text('1. SCOPE OF ENFORCED SERVICES & DELIVERABLES', 14, y);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(51, 65, 85);
+
+  const features = subscription.features || [
+    '24/7 Dedicated Platinum SLA Support',
+    'Continuous Automated Multi-Warehouse Allocation',
+    'Full API Access & Webhook Suite',
+    'Quarterly Executive Business Reviews'
+  ];
+
+  features.forEach((feat: string, idx: number) => {
+    doc.text(`• ${feat}`, 18, y + 8 + (idx * 6));
+  });
+
+  // Section 2
+  y += 14 + (features.length * 6);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(15, 23, 42);
+  doc.text('2. SERVICE LEVEL AGREEMENT (SLA) & UPTIME COMMITMENT', 14, y);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(51, 65, 85);
+  doc.text('DealFlow360 guarantees a monthly uptime commitment of 99.95%. Unscheduled downtime credits apply automatically.', 14, y + 7);
+
+  // Signatures
+  y += 35;
+  doc.line(14, y, 90, y);
+  doc.line(110, y, 196, y);
+
+  doc.setFontSize(8.5);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Authorized Signatory (DealFlow360 Inc.)', 14, y + 5);
+  doc.text(`Authorized Signatory (${subscription.customerName || 'Customer'})`, 110, y + 5);
+
+  // DIRECT DOWNLOAD FILE (.pdf)
+  doc.save(`Contract_Agreement_${subscription.id || 'SUB-1001'}.pdf`);
 }
 
 /**
  * ------------------------------------------------------------
- * 4. EXECUTIVE & ANALYTIC REPORT EXPORTS
+ * 4. EXECUTIVE & ANALYTIC REPORT EXPORTS (PDF & XLS)
  * ------------------------------------------------------------
  */
+export function downloadReportPDF(title: string, kpiCards: { label: string; value: string }[], headers: string[], rows: any[][], filename: string) {
+  const doc = new jsPDF();
+
+  // Header Banner
+  doc.setFillColor(15, 23, 42); // Slate-900
+  doc.rect(0, 0, 210, 24, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(255, 255, 255);
+  doc.text('DEALFLOW360', 14, 15);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('EXECUTIVE REPORTING & GOVERNANCE MODULE', 75, 15);
+
+  // Report Title
+  let y = 36;
+  doc.setTextColor(15, 23, 42);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text(title.toUpperCase(), 14, y);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Generated on: ${new Date().toLocaleString()} · Scope: ${rows.length} Records`, 14, y + 6);
+
+  // KPI Summary Cards
+  if (kpiCards && kpiCards.length > 0) {
+    y += 15;
+    const cardWidth = (182 - (kpiCards.length - 1) * 4) / kpiCards.length;
+
+    kpiCards.forEach((kpi, idx) => {
+      const cardX = 14 + idx * (cardWidth + 4);
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(203, 213, 225);
+      doc.roundedRect(cardX, y, cardWidth, 18, 2, 2, 'FD');
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(100, 116, 139);
+      doc.text(kpi.label.toUpperCase(), cardX + 4, y + 6);
+
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(15, 23, 42);
+      doc.text(kpi.value, cardX + 4, y + 14);
+    });
+
+    y += 18;
+  }
+
+  // Data Table Header
+  y += 10;
+  doc.setFillColor(15, 23, 42);
+  doc.rect(14, y, 182, 8, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(255, 255, 255);
+
+  const colCount = headers.length;
+  const colWidth = 182 / colCount;
+
+  headers.forEach((h, idx) => {
+    doc.text(h.toUpperCase(), 16 + (idx * colWidth), y + 5.5);
+  });
+
+  // Table Rows
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(51, 65, 85);
+
+  rows.forEach((row) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setFillColor(255, 255, 255);
+    doc.rect(14, y, 182, 7.5, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, y + 7.5, 196, y + 7.5);
+
+    row.forEach((cell, colIdx) => {
+      const strVal = String(cell ?? '').slice(0, 22);
+      doc.text(strVal, 16 + (colIdx * colWidth), y + 5);
+    });
+
+    y += 7.5;
+  });
+
+  // DIRECT DOWNLOAD FILE (.pdf)
+  doc.save(`${filename}.pdf`);
+}
+
 export function downloadReportXLS(title: string, headers: string[], rows: any[][], filename: string) {
   const csvRows = [
     [`=== DEALFLOW360 ENTERPRISE REPORT EXPORT: ${title.toUpperCase()} ===`],
@@ -534,83 +614,4 @@ export function downloadReportXLS(title: string, headers: string[], rows: any[][
 
   const csvContent = '\uFEFF' + csvRows.map((r) => r.join(',')).join('\n');
   triggerDirectDownload(csvContent, `${filename}.csv`, 'text/csv;charset=utf-8;');
-}
-
-export function downloadReportPDF(title: string, kpiCards: { label: string; value: string }[], headers: string[], rows: any[][], filename: string) {
-  const rowsHtml = rows
-    .map(
-      (r) => `
-    <tr>
-      ${r
-        .map(
-          (c, idx) => `
-        <td style="padding: 10px 12px; border-bottom: 1px solid #e2e8f0; ${idx === 0 ? 'font-weight: bold; color: #0f172a;' : ''} ${typeof c === 'number' || String(c).startsWith('$') ? 'text-align: right; font-family: monospace;' : ''}">
-          ${c}
-        </td>
-      `
-        )
-        .join('')}
-    </tr>
-  `
-    )
-    .join('');
-
-  const kpisHtml = kpiCards
-    .map(
-      (k) => `
-    <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px; flex: 1;">
-      <div style="font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.5px;">${k.label}</div>
-      <div style="font-size: 24px; font-weight: 900; color: #0f172a; margin-top: 4px; font-family: monospace;">${k.value}</div>
-    </div>
-  `
-    )
-    .join('');
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${title} — DealFlow360</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 36px; color: #1e293b; line-height: 1.5; }
-          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 24px; }
-          h1 { color: #0f172a; margin: 0; font-size: 24px; font-weight: 900; }
-          p { color: #64748b; font-size: 12px; margin: 4px 0 0 0; }
-          .kpi-container { display: flex; gap: 16px; margin-bottom: 28px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
-          th { text-align: left; padding: 12px; background: #0f172a; color: #ffffff; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-          .footer { margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center; border-top: 1px solid #e2e8f0; padding-top: 16px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div>
-            <h1>DealFlow360 — ${title}</h1>
-            <p>Generated on ${new Date().toLocaleString()} · Official Governance Export</p>
-          </div>
-          <div style="text-align: right;">
-            <span style="font-weight: 800; color: #475569; font-size: 12px;">CONFIDENTIAL REPORT</span>
-          </div>
-        </div>
-
-        ${kpisHtml ? `<div class="kpi-container">${kpisHtml}</div>` : ''}
-
-        <table>
-          <thead>
-            <tr>
-              ${headers.map((h, i) => `<th ${i === headers.length - 1 ? 'style="text-align: right;"' : ''}>${h}</th>`).join('')}
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-
-        <div class="footer">DealFlow360 Executive Reporting & Governance Module · All Rights Reserved</div>
-      </body>
-    </html>
-  `;
-
-  triggerDirectDownload(htmlContent, `${filename}.html`, 'text/html;charset=utf-8;');
-  printHtmlDocument(htmlContent);
 }

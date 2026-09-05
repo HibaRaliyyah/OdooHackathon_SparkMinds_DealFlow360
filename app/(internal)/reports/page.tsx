@@ -255,7 +255,7 @@ export default function ReportsPage() {
         { label: 'Approved Deals', value: `${approvedCount}` },
       ];
       downloadReportPDF('Executive Sales Report', kpis, headers, rows, filename);
-      setExportNotice(`Generated printable PDF document for ${filteredQuotations.length} records!`);
+      setExportNotice(`Successfully downloaded ${filename}.pdf for ${filteredQuotations.length} records!`);
       setTimeout(() => setExportNotice(''), 5000);
     }
   };
