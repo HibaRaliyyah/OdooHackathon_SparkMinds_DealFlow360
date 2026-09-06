@@ -11,13 +11,13 @@ import {
   TIER_POLICIES, WAREHOUSES, INVENTORY, QUOTATIONS, APPROVAL_REQUESTS,
   NEGOTIATIONS, FULFILLMENT_ORDERS, INVOICES, SUBSCRIPTIONS,
   DEAL_HEALTH_FLAGS, AUDIT_EVENTS, NOTIFICATIONS, ACTIVITY_FEED,
-  DEMO_PASSWORDS,
+  DEMO_PASSWORDS, CREDIT_NOTES,
 } from './mockData';
 import type {
   User, Customer, Product, ProductCategory, PriceList, TierPolicy,
   Quotation, ApprovalRequest, NegotiationRequest, Warehouse, InventoryItem,
   FulfillmentOrder, Invoice, Subscription, DealHealthFlag, AuditEvent, Notification,
-  ActivityItem, QuotationItem, BlendedRiskResult, ApprovalAction,
+  ActivityItem, QuotationItem, BlendedRiskResult, ApprovalAction, CreditNote,
 } from '@/lib/types';
 import { productService } from '@/lib/services/api/productService';
 
@@ -87,6 +87,7 @@ interface AppState extends AuthState {
   updateInvoice: (id: string, updates: Partial<Invoice>) => void;
 
   // Subscription mutations
+  addSubscription: (sub: Subscription) => void;
   updateSubscription: (id: string, updates: Partial<Subscription>) => void;
 
   // Fulfillment mutations
@@ -97,6 +98,12 @@ interface AppState extends AuthState {
   addProduct: (product: Product) => void;
   updateProduct: (id: string, updates: Partial<Product>) => void;
   deleteProduct: (id: string) => void;
+
+  // Credit Notes
+  creditNotes: CreditNote[];
+  addCreditNote: (cn: CreditNote) => void;
+  updateCreditNote: (id: string, updates: Partial<CreditNote>) => void;
+  reconcileCreditNote: (id: string, invoiceNumber?: string) => void;
 
   // Demo reset
   resetDemoData: () => void;
@@ -143,6 +150,7 @@ export const useStore = create<AppState>()(
       auditEvents: AUDIT_EVENTS,
       notifications: NOTIFICATIONS,
       activityFeed: ACTIVITY_FEED,
+      creditNotes: CREDIT_NOTES,
 
       // Quotation mutations
       addQuotation: (q) => set(s => ({ quotations: [q, ...s.quotations] })),
@@ -209,7 +217,28 @@ export const useStore = create<AppState>()(
           invoices: s.invoices.map(i => i.id === id ? { ...i, ...updates, updatedAt: new Date().toISOString() } : i),
         })),
 
+      // Credit Notes
+      addCreditNote: (cn) => set(s => ({ creditNotes: [cn, ...s.creditNotes] })),
+      updateCreditNote: (id, updates) =>
+        set(s => ({
+          creditNotes: s.creditNotes.map(cn => cn.id === id ? { ...cn, ...updates } : cn),
+        })),
+      reconcileCreditNote: (id, invoiceNumber) =>
+        set(s => ({
+          creditNotes: s.creditNotes.map(cn =>
+            cn.id === id
+              ? {
+                  ...cn,
+                  status: invoiceNumber ? 'Applied' : 'Refunded',
+                  appliedInvoiceNumber: invoiceNumber || cn.appliedInvoiceNumber,
+                  reconciledDate: new Date().toISOString().slice(0, 10),
+                }
+              : cn
+          ),
+        })),
+
       // Subscriptions
+      addSubscription: (sub: Subscription) => set(s => ({ subscriptions: [sub, ...s.subscriptions] })),
       updateSubscription: (id: string, updates: Partial<Subscription>) =>
         set(s => ({
           subscriptions: s.subscriptions.map(sub => sub.id === id ? { ...sub, ...updates, updatedAt: new Date().toISOString() } : sub),
@@ -257,6 +286,7 @@ export const useStore = create<AppState>()(
           activityFeed: ACTIVITY_FEED,
           inventory: INVENTORY,
           warehouses: WAREHOUSES,
+          creditNotes: CREDIT_NOTES,
         }),
     }),
     {
@@ -272,6 +302,7 @@ export const useStore = create<AppState>()(
         fulfillmentOrders: state.fulfillmentOrders,
         warehouses: state.warehouses,
         inventory: state.inventory,
+        creditNotes: state.creditNotes,
       }),
     }
   )

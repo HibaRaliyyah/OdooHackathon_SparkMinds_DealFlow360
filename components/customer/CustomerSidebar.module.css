@@ -75,22 +75,22 @@
   border-radius: 0.75rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #334155;
   text-decoration: none;
   transition: all 0.15s ease;
   border: 1px solid transparent;
 }
 
 .navItem:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-card-hover);
-  border-color: var(--border-medium);
+  color: #0f172a;
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .navItemActive {
-  color: var(--accent-blue);
-  background-color: var(--bg-card-hover);
-  border-color: var(--border-medium);
+  color: #9333ea;
+  background-color: #f3e8ff;
+  border-color: #e9d5ff;
   font-weight: 700;
 }
 
@@ -108,15 +108,15 @@
   padding: 0.625rem 0.875rem;
   border-radius: 0.75rem;
   font-size: 0.8125rem;
-  font-weight: 600;
-  color: #f43f5e;
-  background-color: rgba(244, 63, 94, 0.08);
-  border: 1px solid rgba(244, 63, 94, 0.2);
+  font-weight: 700;
+  color: #be123c;
+  background-color: #ffe4e6;
+  border: 1px solid #fecdd3;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .logoutButton:hover {
-  background-color: rgba(244, 63, 94, 0.16);
-  color: #fda4af;
+  background-color: #fecdd3;
+  color: #9f1239;
 }

@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { QuotationItem, Product, ProductCategory, CustomerTier } from '@/lib/types';
 import { checkLineDiscountViolation } from '@/lib/services/discountService';
 import { Badge } from '@/components/ui/Badge';
-import { Trash2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Trash2, AlertTriangle, ShieldCheck, Pencil, Save, X } from 'lucide-react';
 
 interface LineItemRowProps {
   item: QuotationItem;
@@ -25,6 +25,7 @@ export function LineItemRow({
   onDelete,
   readOnly = false,
 }: LineItemRowProps) {
+  const [isEditingRow, setIsEditingRow] = useState(false);
   const product = products.find((p) => p.id === item.productId);
   const category = categories.find((c) => c.id === product?.categoryId);
 
@@ -50,6 +51,12 @@ export function LineItemRow({
     onUpdate({ ...item, discount: disc, lineTotal });
   };
 
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPrice = Math.max(0, parseFloat(e.target.value) || 0);
+    const lineTotal = newPrice * item.quantity * (1 - discountVal / 100);
+    onUpdate({ ...item, unitPrice: newPrice, lineTotal });
+  };
+
   return (
     <tr className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-card-hover)]/50 transition-colors text-xs">
       {/* Product Name & SKU */}
@@ -63,13 +70,30 @@ export function LineItemRow({
       </td>
 
       {/* Unit Price */}
-      <td className="px-4 py-3 text-right text-[var(--text-secondary)] font-mono font-medium">
-        ${item.unitPrice.toLocaleString()}
+      <td className="px-4 py-3 text-right">
+        {readOnly || !isEditingRow ? (
+          <span className="font-mono font-medium text-[var(--text-secondary)]">${item.unitPrice.toLocaleString()}</span>
+        ) : (
+          <div className="relative w-24 ml-auto">
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={item.unitPrice}
+              onChange={handlePriceChange}
+              onFocus={(e) => e.target.select()}
+              className="w-full bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-lg px-2 py-1 text-right text-xs font-mono font-semibold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-indigo)]"
+            />
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-[var(--text-tertiary)] font-bold pointer-events-none">
+              $
+            </span>
+          </div>
+        )}
       </td>
 
       {/* Quantity */}
       <td className="px-4 py-3 text-center">
-        {readOnly ? (
+        {readOnly || !isEditingRow ? (
           <span className="font-bold text-[var(--text-primary)] font-mono">{item.quantity}</span>
         ) : (
           <input
@@ -85,7 +109,7 @@ export function LineItemRow({
       {/* Line Discount Input + Violation Badge */}
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-2">
-          {readOnly ? (
+          {readOnly || !isEditingRow ? (
             <span className="font-bold font-mono text-[var(--text-primary)]">{discountVal}%</span>
           ) : (
             <div className="relative w-20">
@@ -134,13 +158,43 @@ export function LineItemRow({
       {/* Action */}
       {!readOnly && (
         <td className="px-4 py-3 text-center">
-          <button
-            onClick={() => onDelete(item.id)}
-            className="p-1 text-[var(--text-tertiary)] hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-            title="Remove item"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="flex items-center justify-center gap-1">
+            {!isEditingRow ? (
+              <>
+                <button
+                  onClick={() => setIsEditingRow(true)}
+                  className="p-1 text-[var(--text-tertiary)] hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                  title="Edit line item (price & discount)"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(item.id)}
+                  className="p-1 text-[var(--text-tertiary)] hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  title="Remove item"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setIsEditingRow(false)}
+                  className="p-1 text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                  title="Save changes"
+                >
+                  <Save className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsEditingRow(false)}
+                  className="p-1 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  title="Cancel edit"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
         </td>
       )}
     </tr>

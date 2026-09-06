@@ -40,48 +40,51 @@ export function RiskPanel({ risk }: RiskPanelProps) {
       {/* Score Gauge Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 my-6">
         {/* Blended Risk Score Gauge */}
-        <div className={`p-4 rounded-xl border flex flex-col justify-between ${getScoreColor(risk.riskScore)}`}>
-          <span className="text-[11px] font-bold uppercase tracking-wider opacity-80">Blended Risk Score</span>
-          <div className="text-3xl font-black font-mono my-2">{risk.riskScore}/100</div>
+        <div className={`p-4 rounded-xl border flex flex-col justify-between min-w-0 overflow-hidden ${getScoreColor(risk.riskScore)}`}>
+          <span className="text-[11px] font-bold uppercase tracking-wider opacity-80 truncate">Blended Risk Score</span>
+          <div className="my-2 flex items-baseline gap-1 whitespace-nowrap min-w-0">
+            <span className="text-xl sm:text-2xl font-black font-mono tracking-tight">{risk.riskScore}</span>
+            <span className="text-xs font-bold font-mono opacity-80">/ 100</span>
+          </div>
           <p className="text-[10px] opacity-90 leading-tight">Calculated across line items, margins & customer tier</p>
         </div>
 
         {/* Approval Level Required */}
-        <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)]/40 flex flex-col justify-between">
+        <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)]/40 flex flex-col justify-between min-w-0 overflow-hidden">
           <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] font-medium">
-            <span>Approval Level</span>
-            <TrendingUp className="w-4 h-4 text-[var(--accent-purple-light)]" />
+            <span className="truncate">Approval Level</span>
+            <TrendingUp className="w-4 h-4 text-[var(--accent-purple-light)] shrink-0" />
           </div>
-          <div className="text-lg font-black font-mono text-[var(--text-primary)] my-1">
+          <div className="text-xs sm:text-sm font-black font-mono text-[var(--text-primary)] my-1 leading-snug break-words">
             {risk.approvalLevel ? risk.approvalLevel.replace(/_/g, ' ') : 'AUTO APPROVED'}
           </div>
-          <span className="text-[10px] text-[var(--text-tertiary)]">Target floor protection active</span>
+          <span className="text-[10px] text-[var(--text-tertiary)] truncate">Target floor protection active</span>
         </div>
 
         {/* Total Margin Amount */}
-        <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)]/40 flex flex-col justify-between">
+        <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)]/40 flex flex-col justify-between min-w-0 overflow-hidden">
           <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] font-medium">
-            <span>Gross Margin</span>
-            <DollarSign className="w-4 h-4 text-emerald-400" />
+            <span className="truncate">Gross Margin</span>
+            <DollarSign className="w-4 h-4 text-emerald-400 shrink-0" />
           </div>
-          <div className="text-2xl font-black font-mono text-emerald-400 my-1">
+          <div className="text-lg sm:text-xl font-black font-mono text-emerald-400 my-1 truncate">
             ${marginEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </div>
-          <span className="text-[10px] text-[var(--text-tertiary)]">
+          <span className="text-[10px] text-[var(--text-tertiary)] truncate">
             Margin: {marginPct.toFixed(1)}%
           </span>
         </div>
 
         {/* Violations Count */}
-        <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)]/40 flex flex-col justify-between">
+        <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card-hover)]/40 flex flex-col justify-between min-w-0 overflow-hidden">
           <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] font-medium">
-            <span>Line Violations</span>
-            <AlertOctagon className="w-4 h-4 text-rose-400" />
+            <span className="truncate">Line Violations</span>
+            <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />
           </div>
-          <div className="text-2xl font-black font-mono text-[var(--text-primary)] my-1">
+          <div className="text-lg sm:text-xl font-black font-mono text-[var(--text-primary)] my-1 truncate">
             {risk.violations ? risk.violations.length : 0} Item{risk.violations && risk.violations.length !== 1 ? 's' : ''}
           </div>
-          <span className="text-[10px] text-[var(--text-tertiary)]">
+          <span className="text-[10px] text-[var(--text-tertiary)] truncate">
             {risk.violations && risk.violations.length > 0 ? 'Requires Manager Approval' : 'Clean Line Validation'}
           </span>
         </div>

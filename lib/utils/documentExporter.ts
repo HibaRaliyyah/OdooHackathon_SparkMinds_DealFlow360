@@ -23,6 +23,33 @@ export function triggerDirectDownload(content: string, fileName: string, mimeTyp
 }
 
 /**
+ * Formats date values cleanly as short YYYY-MM-DD for Excel/CSV exports,
+ * preventing '########' column overflow display errors in spreadsheets.
+ */
+export function formatDateForExcel(dateInput?: string | Date | null): string {
+  if (!dateInput) return 'N/A';
+  if (typeof dateInput === 'string') {
+    const trimmed = dateInput.trim();
+    if (!trimmed || trimmed === 'N/A') return 'N/A';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+  try {
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) {
+      return String(dateInput);
+    }
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return String(dateInput);
+  }
+}
+
+/**
  * ------------------------------------------------------------
  * 1. INVOICE EXPORTS (PDF & XLS)
  * ------------------------------------------------------------
@@ -196,8 +223,8 @@ export function downloadInvoiceXLS(invoice: Invoice) {
     ['Customer Name', `"${invoice.customerName || 'N/A'}"`],
     ['Billing Type', `"${invoice.type || 'One-Time'} Billing"`],
     ['Invoice Status', `"${invoice.status || 'Pending'}"`],
-    ['Created Date', `"${invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : 'N/A'}"`],
-    ['Due Date', `"${invoice.dueDate || 'N/A'}"`],
+    ['Created Date', `"${formatDateForExcel(invoice.createdAt)}"`],
+    ['Due Date', `"${formatDateForExcel(invoice.dueDate)}"`],
     [],
     ['LINE ITEMS BREAKDOWN'],
     ['Product Name', 'Ordered Qty', 'Shipped Qty', 'Billed Qty', 'Unit Price', 'Discount', 'Tax %', 'Line Total'],
@@ -215,7 +242,7 @@ export function downloadInvoiceXLS(invoice: Invoice) {
     ['Payment ID', 'Payment Date', 'Payment Method', 'Reference ID', 'Amount', 'Status'],
     ...(paymentRows.length > 0 ? paymentRows : [['No payment records available', '', '', '', '', '']]),
     [],
-    ['Export Timestamp', `"${new Date().toLocaleString()}"`],
+    ['Export Timestamp', `"${formatDateForExcel(new Date())}"`],
   ];
 
   const csvContent = '\uFEFF' + csvRows.map((row) => row.join(',')).join('\n');
@@ -245,8 +272,8 @@ export function exportAllInvoicesXLS(invoices: Invoice[]) {
     (inv.total || 0).toFixed(2),
     (inv.paidAmount || 0).toFixed(2),
     ((inv.total || 0) - (inv.paidAmount || 0)).toFixed(2),
-    `"${inv.dueDate || 'N/A'}"`,
-    `"${inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : 'N/A'}"`,
+    `"${formatDateForExcel(inv.dueDate)}"`,
+    `"${formatDateForExcel(inv.createdAt)}"`,
   ]);
 
   const csvContent = '\uFEFF' + [header, ...rows].map((row) => row.join(',')).join('\n');
@@ -606,7 +633,7 @@ export function downloadReportPDF(title: string, kpiCards: { label: string; valu
 export function downloadReportXLS(title: string, headers: string[], rows: any[][], filename: string) {
   const csvRows = [
     [`=== DEALFLOW360 ENTERPRISE REPORT EXPORT: ${title.toUpperCase()} ===`],
-    [`Export Date: ${new Date().toLocaleString()}`],
+    [`Export Date: ${formatDateForExcel(new Date())}`],
     [],
     headers,
     ...rows.map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`)),

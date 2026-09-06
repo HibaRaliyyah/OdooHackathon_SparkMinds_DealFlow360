@@ -6,10 +6,10 @@ import { useStore } from '@/lib/data/store';
 import { QuotationStatusBadge } from '@/components/customer/QuotationStatusBadge';
 import { Table } from '@/components/ui/Table';
 import { Button } from '@/components/ui/Button';
-import { FileText, Search, Filter, Eye } from 'lucide-react';
+import { FileText, Search, Filter, Eye, MessageSquare } from 'lucide-react';
 
 export default function CustomerQuotationsPage() {
-  const { currentUser, quotations } = useStore();
+  const { currentUser, quotations, negotiations } = useStore();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -94,7 +94,23 @@ export default function CustomerQuotationsPage() {
           columns={[
             {
               header: 'Quotation No.',
-              cell: (q) => <span className="font-mono font-bold text-indigo-300">{q.quoteNumber}</span>,
+              cell: (q) => {
+                const qNeg = (negotiations || []).find((n) => n.quotationId === q.id || n.quotationNumber === q.quoteNumber);
+                const unreadRepMsgs = (qNeg?.messages || []).filter((m) => (m.senderRole === 'SALES_REP' || m.senderRole === 'SALES_MANAGER') && m.read === false).length;
+                const isUnderNegotiation = (q.stage === 'Negotiation' || (qNeg && qNeg.status !== 'Resolved')) && q.stage !== 'Confirmed' && q.stage !== 'Approved';
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-indigo-300">{q.quoteNumber}</span>
+                    {isUnderNegotiation && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-cyan-500 text-slate-950 border border-cyan-300 flex items-center gap-1 shadow-md animate-pulse">
+                        <MessageSquare className="w-3 h-3 text-slate-950" />
+                        <span>{unreadRepMsgs > 0 ? `${unreadRepMsgs} New Reply` : 'Negotiation'}</span>
+                      </span>
+                    )}
+                  </div>
+                );
+              },
             },
             {
               header: 'Created Date',

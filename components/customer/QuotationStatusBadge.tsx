@@ -10,11 +10,17 @@ interface QuotationStatusBadgeProps {
 export function QuotationStatusBadge({ stage, size = 'sm' }: QuotationStatusBadgeProps) {
   const getBadgeStyle = () => {
     switch (stage) {
-      case 'Accepted':
-      case 'Approved':
-      case 'Confirmed':
+      case 'Paid':
       case 'Fulfilled':
         return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+      case 'Allocated':
+        return 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30';
+      case 'Confirmed':
+      case 'Accepted':
+      case 'Approved':
+        return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+      case 'Awaiting Allocation':
+        return 'bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse';
       case 'Awaiting Customer':
       case 'Pending Approval':
         return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
@@ -30,11 +36,18 @@ export function QuotationStatusBadge({ stage, size = 'sm' }: QuotationStatusBadg
     }
   };
 
+  const getLabel = () => {
+    if (stage === 'Pending Approval') return 'Awaiting Customer';
+    if (stage === 'Awaiting Allocation') return 'Awaiting Finance Allocation';
+    if (stage === 'Allocated') return 'Warehouse Allocated (Ready to Pay)';
+    return stage;
+  };
+
   return (
     <span
       className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase border ${getBadgeStyle()}`}
     >
-      {stage === 'Pending Approval' ? 'Awaiting Customer' : stage}
+      {getLabel()}
     </span>
   );
 }

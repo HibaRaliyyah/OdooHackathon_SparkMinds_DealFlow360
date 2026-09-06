@@ -21,7 +21,7 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { BackButton } from '@/components/ui/BackButton';
-import { downloadReportPDF, downloadReportXLS } from '@/lib/utils/documentExporter';
+import { downloadReportPDF, downloadReportXLS, formatDateForExcel } from '@/lib/utils/documentExporter';
 import {
   ResponsiveContainer,
   BarChart,
@@ -220,7 +220,7 @@ export default function ReportsPage() {
 
   // EXPORT HANDLER across Active Report Tabs
   const handleExport = (format: 'PDF' | 'XLS') => {
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const dateStr = formatDateForExcel(new Date());
 
     if (activeTab === 'billing') {
       const filename = `DealFlow360_Billing_System_Report_${dateStr}`;
@@ -231,8 +231,8 @@ export default function ReportsPage() {
         inv.customerName || 'N/A',
         `${inv.type || 'One-Time'} Billing`,
         inv.status || 'Pending',
-        inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : 'N/A',
-        inv.dueDate || 'N/A',
+        formatDateForExcel(inv.createdAt),
+        formatDateForExcel(inv.dueDate),
         `$${(inv.total || (inv as any).amount || 0).toFixed(2)}`,
         `$${(inv.paidAmount || 0).toFixed(2)}`,
         `$${((inv.total || (inv as any).amount || 0) - (inv.paidAmount || 0)).toFixed(2)}`,
@@ -260,7 +260,7 @@ export default function ReportsPage() {
         q.stage || '',
         `${q.blendedRisk?.riskScore || 0}/100`,
         `$${((q.oneTimeTotal || 0) + (q.recurringTotal || 0)).toLocaleString()}`,
-        q.createdAt ? new Date(q.createdAt).toLocaleDateString() : '',
+        formatDateForExcel(q.createdAt),
       ]);
 
       if (format === 'XLS') {
@@ -284,7 +284,7 @@ export default function ReportsPage() {
         sub.plan || (sub as any).planName || 'Enterprise Tier',
         sub.cycle || (sub as any).billingCycle || 'Annual',
         `$${(sub.currentAmount || (sub as any).amount || 0).toLocaleString()}`,
-        sub.nextBillDate || (sub as any).nextBillingDate || '2027-08-31',
+        formatDateForExcel(sub.nextBillDate || (sub as any).nextBillingDate),
         sub.status || 'Active',
       ]);
 

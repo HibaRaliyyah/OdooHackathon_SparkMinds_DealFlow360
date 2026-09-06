@@ -1,82 +1,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ─── Enterprise Theme Tokens (Dark & Light) ──────────────── */
-:root, [data-theme="dark"] {
-  /* Dark Theme (Default) */
-  --bg-main: #0b1120;
-  --bg-sidebar: #070d19;
-  --bg-header: rgba(15, 23, 42, 0.85);
-  --bg-card: #111827;
-  --bg-card-hover: #151d2e;
-  --bg-card-solid: #151d2e;
-  --bg-input: #0f172a;
+/* ─── Enterprise Theme Tokens (White / Light Default & High-Contrast Dark Text) ──────────────── */
+:root, [data-theme="light"], [data-theme="dark"] {
+  /* High-Contrast White Theme & Dark Text */
+  --bg-main: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.95);
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-card-solid: #ffffff;
+  --bg-input: #ffffff;
   
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-medium: #1e293b;
-  --border-highlight: #0284c7;
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-highlight: #9333ea;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-tertiary: #475569;
 
-  --accent-blue: #0284c7;
-  --accent-blue-light: #38bdf8;
-  --accent-blue-dark: #0369a1;
+  --accent-blue: #9333ea;
+  --accent-blue-light: #a855f7;
+  --accent-blue-dark: #7e22ce;
 
   --accent-purple: #9333ea;
   --accent-purple-light: #c084fc;
 
-  --accent-cyan: #0891b2;
-  --accent-cyan-light: #22d3ee;
-
-  --accent-emerald: #10b981;
-  --accent-emerald-light: #34d399;
-
-  --accent-rose: #f43f5e;
-  --accent-rose-light: #fb7185;
-
-  --accent-amber: #f59e0b;
-  --accent-amber-light: #fbbf24;
-
-  --font-sans: 'Inter', var(--font-geist-sans), -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', var(--font-geist-mono), monospace;
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
-
-  color-scheme: dark;
-}
-
-[data-theme="light"] {
-  /* Light Theme */
-  --bg-main: #f8fafc;
-  --bg-sidebar: #ffffff;
-  --bg-header: rgba(255, 255, 255, 0.9);
-  --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
-  --bg-card-solid: #ffffff;
-  --bg-input: #ffffff;
-  
-  --border-subtle: rgba(0, 0, 0, 0.06);
-  --border-medium: #e2e8f0;
-  --border-highlight: #0284c7;
-
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #94a3b8;
-
-  --accent-blue: #0284c7;
-  --accent-blue-light: #0369a1;
-  --accent-blue-dark: #075985;
-
-  --accent-purple: #7e22ce;
-  --accent-purple-light: #9333ea;
-
-  --accent-cyan: #0e7490;
-  --accent-cyan-light: #0891b2;
+  --accent-cyan: #0284c7;
+  --accent-cyan-light: #38bdf8;
 
   --accent-emerald: #059669;
   --accent-emerald-light: #10b981;
@@ -87,10 +39,18 @@
   --accent-amber: #d97706;
   --accent-amber-light: #f59e0b;
 
+  --font-sans: 'Inter', var(--font-geist-sans), -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', var(--font-geist-mono), monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
   color-scheme: light;
 }
 
-/* ─── Base Reset ───────────────────────────────────────────── */
+/* ─── Base Reset & Universal Dark Text Standard ──────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -98,18 +58,83 @@
 html {
   font-family: var(--font-sans);
   background-color: var(--bg-main);
-  color: var(--text-primary);
+  color: #0f172a;
   -webkit-font-smoothing: antialiased;
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 body {
   min-height: 100vh;
   background-color: var(--bg-main);
-  color: var(--text-primary);
+  color: #0f172a;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* Force dark text for cards, headers, tables, paragraphs, and list items */
+h1, h2, h3, h4, h5, h6 {
+  color: #0f172a;
+}
+
+p, span, label, td, th, li {
+  color: #1e293b;
+}
+
+/* High contrast override for light text utility classes inside light cards & containers */
+.card .text-slate-400,
+.card .text-slate-300,
+.card .text-slate-200,
+.card .text-slate-100,
+.card .text-indigo-300,
+.card .text-cyan-300,
+.bg-white .text-slate-400,
+.bg-white .text-slate-300,
+.bg-white .text-slate-200,
+.bg-white .text-slate-100,
+.bg-white .text-indigo-300,
+.bg-white .text-cyan-300,
+.bg-slate-50 .text-slate-400,
+.bg-slate-50 .text-slate-300,
+.bg-slate-50 .text-slate-200,
+.bg-slate-50 .text-slate-100,
+.bg-[var\(--bg-card\)] .text-slate-400,
+.bg-[var\(--bg-card\)] .text-slate-300,
+.bg-[var\(--bg-card\)] .text-slate-200,
+.bg-[var\(--bg-card\)] .text-slate-100 {
+  color: #334155;
+}
+
+.card h1, .card h2, .card h3, .card h4, .card h5, .card h6,
+.bg-white h1, .bg-white h2, .bg-white h3, .bg-white h4, .bg-white h5, .bg-white h6,
+.bg-slate-50 h1, .bg-slate-50 h2, .bg-slate-50 h3, .bg-slate-50 h4, .bg-slate-50 h5, .bg-slate-50 h6,
+.bg-[var\(--bg-card\)] h1, .bg-[var\(--bg-card\)] h2, .bg-[var\(--bg-card\)] h3, .bg-[var\(--bg-card\)] h4, .bg-[var\(--bg-card\)] h5, .bg-[var\(--bg-card\)] h6 {
+  color: #0f172a;
+}
+
+/* Master White Theme Fallback Overrides for inner items */
+.bg-slate-900,
+.bg-slate-800,
+[class*="bg-slate-900"],
+[class*="bg-slate-800"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+.bg-slate-900 p,
+.bg-slate-800 p,
+.bg-slate-900 span,
+.bg-slate-800 span,
+.bg-slate-900 div,
+.bg-slate-800 div {
+  color: #1e293b !important;
+}
+
+[class*="dark:bg-slate-900"],
+[class*="dark:bg-slate-800"],
+[class*="dark:border-slate-800"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
 
 /* ─── Custom Scrollbar & Table Container Scroll ──────────────── */
 ::-webkit-scrollbar {
@@ -283,11 +308,20 @@ input[type="password"],
 input[type="date"],
 select,
 textarea {
-  background-color: var(--bg-input);
-  border: 1px solid var(--border-medium);
-  color: var(--text-primary);
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
   border-radius: var(--radius-sm);
   transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+/* Chrome / Safari / Edge Autofill White Background Override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
 }
 
 input[type="text"]:focus,
@@ -298,6 +332,6 @@ input[type="date"]:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+  border-color: #9333ea !important;
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2) !important;
 }

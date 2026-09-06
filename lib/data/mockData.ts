@@ -8,7 +8,7 @@ import type {
   Quotation, QuotationItem, ApprovalRequest, ApprovalAction,
   NegotiationRequest, Warehouse, InventoryItem, FulfillmentOrder,
   Invoice, Payment, Subscription, DealHealthFlag, AuditEvent, Notification,
-  ActivityItem,
+  ActivityItem, CreditNote,
 } from '@/lib/types';
 
 // ─── Users ────────────────────────────────────────────────────
@@ -193,16 +193,37 @@ export const WAREHOUSES: Warehouse[] = [
   { id: 'wh-1', name: 'Main Warehouse', location: 'Chicago, IL' },
   { id: 'wh-2', name: 'East Depot', location: 'Newark, NJ' },
   { id: 'wh-3', name: 'West Hub', location: 'Los Angeles, CA' },
+  { id: 'wh-4', name: 'North warehouse', location: 'Maharashtra' },
+  { id: 'wh-5', name: 'East', location: 'Gujarat' },
+  { id: 'wh-6', name: 'Ahmadabad Warehouse', location: 'Gandhinagar' },
 ];
 
 export const INVENTORY: InventoryItem[] = [
+  // Main Warehouse (Total: InStock 175, Reserved 46, Available 129)
   { id: 'inv-1', warehouseId: 'wh-1', warehouseName: 'Main Warehouse', productId: 'prod-1', productName: 'Laptop Pro 14', inStock: 40, reserved: 18, available: 22 },
-  { id: 'inv-2', warehouseId: 'wh-2', warehouseName: 'East Depot', productId: 'prod-1', productName: 'Laptop Pro 14', inStock: 10, reserved: 6, available: 4 },
-  { id: 'inv-3', warehouseId: 'wh-3', warehouseName: 'West Hub', productId: 'prod-1', productName: 'Laptop Pro 14', inStock: 15, reserved: 0, available: 15 },
-  { id: 'inv-4', warehouseId: 'wh-1', warehouseName: 'Main Warehouse', productId: 'prod-4', productName: 'Wireless Mouse', inStock: 120, reserved: 20, available: 100 },
-  { id: 'inv-5', warehouseId: 'wh-2', warehouseName: 'East Depot', productId: 'prod-4', productName: 'Wireless Mouse', inStock: 60, reserved: 5, available: 55 },
+  { id: 'inv-4', warehouseId: 'wh-1', warehouseName: 'Main Warehouse', productId: 'prod-4', productName: 'Wireless Mouse', inStock: 105, reserved: 20, available: 85 },
   { id: 'inv-6', warehouseId: 'wh-1', warehouseName: 'Main Warehouse', productId: 'prod-5', productName: 'Docking Station', inStock: 30, reserved: 8, available: 22 },
+
+  // East Depot (Total: InStock 95, Reserved 13, Available 82)
+  { id: 'inv-2', warehouseId: 'wh-2', warehouseName: 'East Depot', productId: 'prod-1', productName: 'Laptop Pro 14', inStock: 20, reserved: 6, available: 14 },
+  { id: 'inv-5', warehouseId: 'wh-2', warehouseName: 'East Depot', productId: 'prod-4', productName: 'Wireless Mouse', inStock: 60, reserved: 5, available: 55 },
   { id: 'inv-7', warehouseId: 'wh-2', warehouseName: 'East Depot', productId: 'prod-5', productName: 'Docking Station', inStock: 15, reserved: 2, available: 13 },
+
+  // West Hub (Total: InStock 15, Reserved 0, Available 15)
+  { id: 'inv-3', warehouseId: 'wh-3', warehouseName: 'West Hub', productId: 'prod-1', productName: 'Laptop Pro 14', inStock: 15, reserved: 0, available: 15 },
+
+  // North warehouse (Total: InStock 170, Reserved 0, Available 170)
+  { id: 'inv-8', warehouseId: 'wh-4', warehouseName: 'North warehouse', productId: 'prod-7', productName: 'Support SLA', inStock: 70, reserved: 0, available: 70 },
+  { id: 'inv-9', warehouseId: 'wh-4', warehouseName: 'North warehouse', productId: 'prod-6', productName: 'Care Plan 2yr', inStock: 50, reserved: 0, available: 50 },
+  { id: 'inv-10', warehouseId: 'wh-4', warehouseName: 'North warehouse', productId: 'prod-3', productName: 'Extended Warranty', inStock: 50, reserved: 0, available: 50 },
+
+  // East (Total: InStock 170, Reserved 0, Available 170)
+  { id: 'inv-11', warehouseId: 'wh-5', warehouseName: 'East', productId: 'prod-2', productName: 'Onsite Setup Service', inStock: 70, reserved: 0, available: 70 },
+  { id: 'inv-12', warehouseId: 'wh-5', warehouseName: 'East', productId: 'prod-4', productName: 'Wireless Mouse', inStock: 100, reserved: 0, available: 100 },
+
+  // Ahmadabad Warehouse (Total: InStock 185, Reserved 0, Available 185)
+  { id: 'inv-13', warehouseId: 'wh-6', warehouseName: 'Ahmadabad Warehouse', productId: 'prod-1', productName: 'Laptop Pro 14', inStock: 85, reserved: 0, available: 85 },
+  { id: 'inv-14', warehouseId: 'wh-6', warehouseName: 'Ahmadabad Warehouse', productId: 'prod-5', productName: 'Docking Station', inStock: 100, reserved: 0, available: 100 },
 ];
 
 // ─── Demo Quotations ──────────────────────────────────────────
@@ -591,6 +612,29 @@ export const FULFILLMENT_ORDERS: FulfillmentOrder[] = [
 // ─── Invoices ─────────────────────────────────────────────────
 export const INVOICES: Invoice[] = [
   {
+    id: 'inv-2026-3107',
+    invoiceNumber: 'INV-2026-3107',
+    quotationId: 'quot-2026-9744',
+    quotationNumber: 'Q-2026-9744',
+    customerId: 'cust-1',
+    customerName: 'Acme Corp',
+    type: 'One-Time',
+    items: [
+      { id: 'ii-3107', productId: 'prod-1', productName: 'Enterprise Server Rack X9', orderedQty: 2, shippedQty: 2, billedQty: 2, unitPrice: 4200, discount: 5, taxPercent: 15, lineTotal: 7980 },
+    ],
+    subtotal: 7980,
+    discount: 0,
+    tax: 1197,
+    total: 9177,
+    status: 'Unpaid',
+    dueDate: '2026-09-30',
+    paidAmount: 0,
+    payments: [],
+    createdAt: '2026-09-02T10:00:00Z',
+    updatedAt: '2026-09-02T10:00:00Z',
+    deliveryReconciled: true,
+  },
+  {
     id: 'inv-1042a', invoiceNumber: 'INV-1042',
     quotationId: 'quot-1042', quotationNumber: 'Q-1042',
     customerId: 'cust-1', customerName: 'Acme Corp',
@@ -763,4 +807,67 @@ export const ACTIVITY_FEED: ActivityItem[] = [
   { id: 'act-feed-6', message: 'Q-1041 (Delta LLC) flagged: Discount anomaly 22% vs avg 8%', type: 'alert', timestamp: '2026-08-23T08:00:00Z', relatedTo: 'Q-1041' },
   { id: 'act-feed-7', message: 'Subscription Care Plan activated for Acme Corp', type: 'invoice', timestamp: '2026-09-01T00:00:00Z', relatedTo: 'sub-1' },
   { id: 'act-feed-8', message: 'Q-1039 (Beta Industries) submitted for Sales Manager approval', type: 'approval', timestamp: '2026-08-21T10:00:00Z', relatedTo: 'Q-1039' },
+];
+
+// ─── Credit Notes & Reconciliation Mock Data ───────────────────
+export const CREDIT_NOTES: CreditNote[] = [
+  {
+    id: 'cn-101',
+    creditNoteNumber: 'CN-2026-001',
+    quotationNumber: 'Q-1042',
+    invoiceId: 'inv-1042a',
+    invoiceNumber: 'INV-1042',
+    customerId: 'cust-1',
+    customerName: 'Acme Corp',
+    amount: 1250.0,
+    reason: 'Product Return / RMA',
+    status: 'Applied',
+    issuedDate: '2026-08-28',
+    reconciledDate: '2026-08-30',
+    appliedInvoiceNumber: 'INV-2026-3107',
+    notes: 'RMA approval for 1x damaged unit returned to East Depot. Offset against invoice balance.',
+    createdAt: '2026-08-28T09:00:00Z',
+  },
+  {
+    id: 'cn-102',
+    creditNoteNumber: 'CN-2026-002',
+    quotationNumber: 'Q-1039',
+    invoiceId: 'inv-1039',
+    invoiceNumber: 'INV-1039',
+    customerId: 'cust-2',
+    customerName: 'Beta Industries',
+    amount: 850.0,
+    reason: 'Billing / Tax Correction',
+    status: 'Approved',
+    issuedDate: '2026-09-02',
+    notes: 'Exemption certificate verified post-billing. Tax adjustment credit memo.',
+    createdAt: '2026-09-02T11:30:00Z',
+  },
+  {
+    id: 'cn-103',
+    creditNoteNumber: 'CN-2026-003',
+    quotationNumber: 'Q-1040',
+    customerId: 'cust-3',
+    customerName: 'Zenith Co',
+    amount: 420.0,
+    reason: 'Volume Rebate & Discount',
+    status: 'Draft',
+    issuedDate: '2026-09-04',
+    notes: 'Quarterly Tier volume rebate credit memo pending Finance sign-off.',
+    createdAt: '2026-09-04T14:15:00Z',
+  },
+  {
+    id: 'cn-104',
+    creditNoteNumber: 'CN-2026-004',
+    quotationNumber: 'Q-1041',
+    customerId: 'cust-5',
+    customerName: 'Delta LLC',
+    amount: 1500.0,
+    reason: 'SLA Breach Penalty',
+    status: 'Refunded',
+    issuedDate: '2026-08-20',
+    reconciledDate: '2026-08-22',
+    notes: 'Onsite deployment delay SLA penalty credited & refunded via bank wire.',
+    createdAt: '2026-08-20T16:00:00Z',
+  },
 ];

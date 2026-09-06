@@ -34,6 +34,7 @@ export default function WarehousesPage() {
     warehouses,
     inventory,
     products,
+    fulfillmentOrders,
     addWarehouse,
     updateWarehouse,
     addInventoryItem,
@@ -78,9 +79,19 @@ export default function WarehousesPage() {
 
   // KPI Calculations
   const totalInStock = inventory.reduce((acc, i) => acc + (i.inStock || 0), 0);
-  const totalReserved = inventory.reduce((acc, i) => acc + (i.reserved || 0), 0);
-  const totalAvailable = inventory.reduce((acc, i) => acc + (i.available || 0), 0);
-  const lowStockItemsCount = inventory.filter((i) => (i.available || 0) < 10).length;
+
+  // Live global reserved: sum allocatedQty minus backorderQty across all active fulfillments
+  const allActiveAllocs = (fulfillmentOrders || [])
+    .filter((fo) => fo.status !== 'Completed')
+    .flatMap((fo) => fo.allocations || []);
+  const totalReservedLive = allActiveAllocs.reduce(
+    (sum, a) => sum + Math.max(0, (a.allocatedQty || 0) - (a.backorderQty || 0)),
+    0
+  );
+  const totalReservedFallback = inventory.reduce((acc, i) => acc + (i.reserved || 0), 0);
+  const totalReserved = allActiveAllocs.length > 0 ? totalReservedLive : totalReservedFallback;
+  const totalAvailable = Math.max(0, totalInStock - totalReserved);
+  const lowStockItemsCount = inventory.filter((i) => Math.max(0, (i.inStock || 0) - (i.reserved || 0)) < 10).length;
 
   // Filtered Inventory Data
   const filteredInventory = inventory.filter((item) => {
@@ -165,7 +176,7 @@ export default function WarehousesPage() {
 
     // Update Source
     const newSourceInStock = Math.max(0, sourceItem.inStock - transferQty);
-    const newSourceAvailable = Math.max(0, sourceItem.available - transferQty);
+    const newSourceAvailable = Math.max(0, newSourceInStock - (sourceItem.reserved || 0));
     updateInventory(sourceItem.id, {
       inStock: newSourceInStock,
       available: newSourceAvailable,
@@ -173,9 +184,11 @@ export default function WarehousesPage() {
 
     // Update or Create Target
     if (targetItem) {
+      const newTargetInStock = targetItem.inStock + transferQty;
+      const newTargetAvailable = Math.max(0, newTargetInStock - (targetItem.reserved || 0));
       updateInventory(targetItem.id, {
-        inStock: targetItem.inStock + transferQty,
-        available: targetItem.available + transferQty,
+        inStock: newTargetInStock,
+        available: newTargetAvailable,
       });
     } else if (toWh && prod) {
       const newTargetInv: InventoryItem = {
@@ -274,10 +287,10 @@ export default function WarehousesPage() {
               </span>
             </div>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight mt-1.5">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
             Depot Management & Stock Allocation Hub
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-700 font-medium mt-1">
             Manage physical warehouses, monitor real-time stock levels, re-balance inventory, and configure auto-split priority routing.
           </p>
         </div>
@@ -305,8 +318,8 @@ export default function WarehousesPage() {
               </Button>
             </>
           ) : (
-            <div className="px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-2 shadow-sm">
-              <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <div className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-2 shadow-sm">
+              <Lock className="w-3.5 h-3.5 text-amber-700" />
               <span>Read-Only Tracking (Restricted to Finance / Operations)</span>
             </div>
           )}
@@ -315,14 +328,14 @@ export default function WarehousesPage() {
 
       {/* Global Notification Banner */}
       {bannerMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center justify-between gap-3 shadow-lg animate-in fade-in slide-in-from-top-2">
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{bannerMsg.text}</span>
           </div>
           <button
             onClick={() => setBannerMsg(null)}
-            className="text-emerald-400 hover:text-white text-xs font-bold px-2 py-1 rounded cursor-pointer"
+            className="text-emerald-700 hover:text-emerald-900 text-xs font-bold px-2 py-1 rounded cursor-pointer"
           >
             Dismiss
           </button>
@@ -332,141 +345,156 @@ export default function WarehousesPage() {
       {/* KPI Overview Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* KPI 1: Total Warehouses */}
-        <div className="card p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-indigo-500/40">
+        <div className="card p-5 bg-white border border-slate-200 shadow-sm hover:border-purple-400">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Depots</span>
-            <div className="p-2.5 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Active Depots</span>
+            <div className="p-2.5 rounded-xl bg-purple-100 text-purple-700 border border-purple-200">
               <WarehouseIcon className="w-4 h-4" />
             </div>
           </div>
           <div className="my-3">
-            <div className="text-3xl font-black font-mono text-white tracking-tight">{warehouses.length} Facilities</div>
-            <div className="text-xs text-emerald-400 font-semibold mt-1 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="text-3xl font-black font-mono text-slate-900 tracking-tight">{warehouses.length} Facilities</div>
+            <div className="text-xs text-emerald-700 font-bold mt-1 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
               <span>Live Sync Active</span>
             </div>
           </div>
-          <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
+          <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-semibold flex justify-between">
             <span>Primary Hub: Chicago</span>
-            <span className="text-indigo-400 font-bold">Auto-Split On</span>
+            <span className="text-purple-700 font-bold">Auto-Split On</span>
           </div>
         </div>
 
         {/* KPI 2: Total In Stock */}
-        <div className="card p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-emerald-500/40">
+        <div className="card p-5 bg-white border border-slate-200 shadow-sm hover:border-emerald-400">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Physical Stock</span>
-            <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Total Physical Stock</span>
+            <div className="p-2.5 rounded-xl bg-emerald-100 text-emerald-700 border border-emerald-200">
               <Boxes className="w-4 h-4" />
             </div>
           </div>
           <div className="my-3">
-            <div className="text-3xl font-black font-mono text-emerald-400 tracking-tight">{totalInStock} Units</div>
-            <div className="text-xs text-slate-400 font-medium mt-1">
-              Available: <strong className="text-emerald-300 font-bold">{totalAvailable}</strong> | Reserved: <strong className="text-amber-300 font-bold">{totalReserved}</strong>
+            <div className="text-3xl font-black font-mono text-emerald-700 tracking-tight">{totalInStock} Units</div>
+            <div className="text-xs text-slate-700 font-semibold mt-1">
+              Available: <strong className="text-emerald-700 font-bold">{totalAvailable}</strong> | Reserved: <strong className="text-amber-700 font-bold">{totalReserved}</strong>
             </div>
           </div>
-          <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
+          <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-semibold flex justify-between">
             <span>Allocated to Orders</span>
-            <span className="text-emerald-400 font-bold">{totalReserved} Reserved</span>
+            <span className="text-emerald-700 font-bold">{totalReserved} Reserved</span>
           </div>
         </div>
 
         {/* KPI 3: Available for Fulfillment */}
-        <div className="card p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-cyan-500/40">
+        <div className="card p-5 bg-white border border-slate-200 shadow-sm hover:border-purple-400">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Available Units</span>
-            <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/20">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Net Available Units</span>
+            <div className="p-2.5 rounded-xl bg-purple-100 text-purple-700 border border-purple-200">
               <Layers className="w-4 h-4" />
             </div>
           </div>
           <div className="my-3">
-            <div className="text-3xl font-black font-mono text-cyan-300 tracking-tight">{totalAvailable} Ready</div>
-            <div className="text-xs text-cyan-300 font-semibold mt-1">Ready for immediate dispatch</div>
+            <div className="text-3xl font-black font-mono text-slate-900 tracking-tight">{totalAvailable} Ready</div>
+            <div className="text-xs text-purple-800 font-semibold mt-1">Ready for immediate dispatch</div>
           </div>
-          <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
+          <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-semibold flex justify-between">
             <span>Quote Allocation Ready</span>
-            <span className="text-cyan-400 font-bold">100% Unbound</span>
+            <span className="text-purple-700 font-bold">100% Unbound</span>
           </div>
         </div>
 
         {/* KPI 4: Stock Alerts */}
-        <div className="card p-5 bg-[var(--bg-card)] border border-[var(--border-subtle)] hover:border-rose-500/40">
+        <div className="card p-5 bg-white border border-slate-200 shadow-sm hover:border-rose-400">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Reorder / Safety Alerts</span>
-            <div className="p-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/20">
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Reorder / Safety Alerts</span>
+            <div className="p-2.5 rounded-xl bg-rose-100 text-rose-700 border border-rose-200">
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="my-3">
-            <div className="text-3xl font-black font-mono text-rose-400 tracking-tight">{lowStockItemsCount} SKUs Low</div>
-            <div className="text-xs text-rose-300 font-semibold mt-1">Below safety reorder threshold</div>
+            <div className="text-3xl font-black font-mono text-rose-700 tracking-tight">{lowStockItemsCount} SKUs Low</div>
+            <div className="text-xs text-rose-800 font-semibold mt-1">Below safety reorder threshold</div>
           </div>
-          <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
+          <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-700 font-semibold flex justify-between">
             <span>Replenishment Priority</span>
-            <span className="text-rose-400 font-bold">Action Needed</span>
+            <span className="text-rose-700 font-bold">Action Needed</span>
           </div>
         </div>
       </div>
 
       {/* Warehouse Facilities Cards Grid */}
       <div className="space-y-4">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
-          <Building className="w-4 h-4 text-indigo-400" /> Physical Depots & Auto-Split Routing Weighting
+        <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <Building className="w-4 h-4 text-purple-600" /> Physical Depots & Auto-Split Routing Weighting
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {warehouses.map((wh) => {
             const whItems = inventory.filter((i) => i.warehouseId === wh.id);
             const whInStock = whItems.reduce((a, b) => a + (b.inStock || 0), 0);
-            const whReserved = whItems.reduce((a, b) => a + (b.reserved || 0), 0);
-            const whAvailable = whItems.reduce((a, b) => a + (b.available || 0), 0);
+
+            // Live reserved = sum of allocatedQty from active (non-Completed) fulfillment
+            // orders for this warehouse, minus backorderQty (surplus returned to source).
+            const activeAllocs = (fulfillmentOrders || [])
+              .filter((fo) => fo.status !== 'Completed')
+              .flatMap((fo) => fo.allocations || [])
+              .filter((a) => a.warehouseId === wh.id);
+
+            const liveReserved = activeAllocs.reduce(
+              (sum, a) => sum + Math.max(0, (a.allocatedQty || 0) - (a.backorderQty || 0)),
+              0
+            );
+
+            // Fall back to inventory.reserved if no fulfillment orders exist yet
+            const whReservedFallback = whItems.reduce((a, b) => a + (b.reserved || 0), 0);
+            const whReserved = activeAllocs.length > 0 ? liveReserved : whReservedFallback;
+            const whAvailable = Math.max(0, whInStock - whReserved);
 
             return (
               <div
                 key={wh.id}
-                className={`card p-5 bg-[var(--bg-card)] border transition-all space-y-4 shadow-lg ${
-                  selectedWarehouseFilter === wh.id ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-800'
+                className={`card p-5 bg-white border transition-all space-y-4 shadow-sm ${
+                  selectedWarehouseFilter === wh.id ? 'border-purple-600 ring-1 ring-purple-600' : 'border-slate-200'
                 }`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-2xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/20">
+                    <div className="p-3 rounded-2xl bg-purple-100 text-purple-700 border border-purple-200">
                       <WarehouseIcon className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-extrabold text-white">{wh.name}</h3>
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                      <h3 className="text-sm font-extrabold text-slate-900">{wh.name}</h3>
+                      <p className="text-xs text-slate-700 font-medium flex items-center gap-1 mt-0.5">
                         <MapPin className="w-3 h-3 text-slate-500" /> {wh.location}
                       </p>
                     </div>
                   </div>
 
-                  <span className="text-[10px] font-bold uppercase bg-indigo-500/10 text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/20">
+                  <span className="text-[10px] font-bold uppercase bg-purple-100 text-purple-800 px-2 py-0.5 rounded border border-purple-200">
                     Priority Hub
                   </span>
                 </div>
 
                 {/* Stock Stats */}
-                <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-center">
+                <div className="grid grid-cols-3 gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
                   <div>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase block">In Stock</span>
-                    <span className="font-mono text-sm font-extrabold text-white">{whInStock}</span>
+                    <span className="text-[10px] text-slate-700 font-bold uppercase block">In Stock</span>
+                    <span className="font-mono text-sm font-extrabold text-slate-900">{whInStock}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Reserved</span>
-                    <span className="font-mono text-sm font-extrabold text-amber-400">{whReserved}</span>
+                    <span className="text-[10px] text-slate-700 font-bold uppercase block">Reserved</span>
+                    <span className="font-mono text-sm font-extrabold text-amber-700">{whReserved}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase block">Available</span>
-                    <span className="font-mono text-sm font-extrabold text-emerald-400">{whAvailable}</span>
+                    <span className="text-[10px] text-slate-700 font-bold uppercase block">Available</span>
+                    <span className="font-mono text-sm font-extrabold text-emerald-700">{whAvailable}</span>
                   </div>
                 </div>
 
                 {/* Live Sync Badge & Actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
-                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-400 font-semibold font-mono">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-xs">
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold font-mono">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
                     <span>Sync Active</span>
                   </div>
 
@@ -475,7 +503,7 @@ export default function WarehousesPage() {
                     onClick={() =>
                       setSelectedWarehouseFilter(selectedWarehouseFilter === wh.id ? 'ALL' : wh.id)
                     }
-                    className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold transition-colors cursor-pointer"
+                    className="text-xs text-purple-700 hover:text-purple-900 font-bold transition-colors cursor-pointer"
                   >
                     {selectedWarehouseFilter === wh.id ? 'Show All Depots' : 'Filter Items ↓'}
                   </button>
@@ -487,14 +515,14 @@ export default function WarehousesPage() {
       </div>
 
       {/* Live Inventory & Stock Allocation Table */}
-      <div className="card p-6 bg-[var(--bg-card)] border border-slate-800 space-y-4">
+      <div className="card p-6 bg-white border border-slate-200 shadow-sm space-y-4">
         {/* Table Filters & Search Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <Boxes className="w-4 h-4 text-emerald-400" /> Live Inventory & Stock Allocation Matrix
+            <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <Boxes className="w-4 h-4 text-emerald-600" /> Live Inventory & Stock Allocation Matrix
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-700 font-medium mt-0.5">
               Inspect physical stock counts, reserved orders, and available quantities across facilities.
             </p>
           </div>
@@ -502,13 +530,13 @@ export default function WarehousesPage() {
           <div className="flex items-center gap-3 flex-wrap">
             {/* Search Input */}
             <div className="relative">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 placeholder="Search product or warehouse..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="text-xs bg-slate-900 border border-slate-700/60 rounded-xl pl-9 pr-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="text-xs bg-white border border-slate-300 rounded-xl pl-9 pr-3 py-1.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 shadow-sm"
               />
             </div>
 
@@ -516,7 +544,7 @@ export default function WarehousesPage() {
             <select
               value={selectedWarehouseFilter}
               onChange={(e) => setSelectedWarehouseFilter(e.target.value)}
-              className="text-xs bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500"
+              className="text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 focus:outline-none focus:border-purple-600 shadow-sm"
             >
               <option value="ALL">All Facilities</option>
               {warehouses.map((w) => (
@@ -530,7 +558,7 @@ export default function WarehousesPage() {
             <select
               value={stockHealthFilter}
               onChange={(e) => setStockHealthFilter(e.target.value as any)}
-              className="text-xs bg-slate-900 border border-slate-700/60 rounded-xl px-3 py-1.5 text-white focus:outline-none focus:border-indigo-500"
+              className="text-xs bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-slate-900 focus:outline-none focus:border-purple-600 shadow-sm"
             >
               <option value="ALL">All Stock Status</option>
               <option value="LOW">Low Stock Alerts (&lt; 10)</option>
@@ -548,16 +576,16 @@ export default function WarehousesPage() {
               header: 'Product Name & SKU',
               cell: (item) => (
                 <div>
-                  <span className="font-bold text-white text-xs">{item.productName}</span>
-                  <div className="text-[10px] text-slate-500 font-mono">ID: {item.productId}</div>
+                  <span className="font-bold text-slate-900 text-xs">{item.productName}</span>
+                  <div className="text-[10px] text-slate-700 font-mono font-semibold">ID: {item.productId}</div>
                 </div>
               ),
             },
             {
               header: 'Source Facility / Depot',
               cell: (item) => (
-                <div className="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
-                  <MapPin className="w-3 h-3 text-indigo-400" />
+                <div className="flex items-center gap-1.5 text-xs text-slate-900 font-bold">
+                  <MapPin className="w-3 h-3 text-purple-600" />
                   <span>{item.warehouseName}</span>
                 </div>
               ),
@@ -565,13 +593,13 @@ export default function WarehousesPage() {
             {
               header: 'Total Physical Stock',
               cell: (item) => (
-                <span className="font-mono font-bold text-white text-xs">{item.inStock} Units</span>
+                <span className="font-mono font-bold text-slate-900 text-xs">{item.inStock} Units</span>
               ),
             },
             {
               header: 'Reserved for Orders',
               cell: (item) => (
-                <span className="font-mono font-bold text-amber-400 text-xs">
+                <span className="font-mono font-bold text-amber-700 text-xs">
                   {item.reserved} Reserved
                 </span>
               ),
@@ -579,7 +607,7 @@ export default function WarehousesPage() {
             {
               header: 'Net Available Qty',
               cell: (item) => (
-                <span className="font-mono font-black text-emerald-400 text-sm">
+                <span className="font-mono font-black text-emerald-700 text-sm">
                   {item.available} Available
                 </span>
               ),
@@ -623,7 +651,7 @@ export default function WarehousesPage() {
                     </Button>
                   </div>
                 ) : (
-                  <span className="text-[10px] text-slate-500 font-mono">View Only</span>
+                  <span className="text-[10px] text-slate-600 font-mono font-bold">View Only</span>
                 )
               ),
             },
@@ -642,7 +670,7 @@ export default function WarehousesPage() {
         >
           <form onSubmit={handleCreateWarehouse} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
+              <label className="block text-xs font-bold text-slate-900 mb-1">
                 Warehouse / Depot Name *
               </label>
               <input
@@ -651,12 +679,12 @@ export default function WarehousesPage() {
                 placeholder="e.g. Southwest Distribution Center"
                 value={newWhName}
                 onChange={(e) => setNewWhName(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 shadow-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
+              <label className="block text-xs font-bold text-slate-900 mb-1">
                 City, State / Region Location *
               </label>
               <input
@@ -665,18 +693,18 @@ export default function WarehousesPage() {
                 placeholder="e.g. Phoenix, AZ"
                 value={newWhLocation}
                 onChange={(e) => setNewWhLocation(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-purple-600 shadow-sm"
               />
             </div>
 
-            <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs text-indigo-300 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="p-3.5 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-800 font-medium flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
               <span>
                 New depots are automatically included in the auto-split optimization engine for lowest-freight calculations.
               </span>
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
               <Button variant="outline" size="sm" type="button" onClick={() => setShowAddWarehouseModal(false)}>
                 Cancel
               </Button>
@@ -699,11 +727,11 @@ export default function WarehousesPage() {
         >
           <form onSubmit={handleExecuteTransfer} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">Product SKU *</label>
+              <label className="block text-xs font-bold text-slate-900 mb-1">Product SKU *</label>
               <select
                 value={transferProductId}
                 onChange={(e) => setTransferProductId(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-purple-600 shadow-sm"
               >
                 {products.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -715,11 +743,11 @@ export default function WarehousesPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">From Source Depot *</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1">From Source Depot *</label>
                 <select
                   value={transferFromWhId}
                   onChange={(e) => setTransferFromWhId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-purple-600 shadow-sm"
                 >
                   {warehouses.map((w) => (
                     <option key={w.id} value={w.id}>
@@ -730,11 +758,11 @@ export default function WarehousesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">To Destination Depot *</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1">To Destination Depot *</label>
                 <select
                   value={transferToWhId}
                   onChange={(e) => setTransferToWhId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-purple-600 shadow-sm"
                 >
                   {warehouses.map((w) => (
                     <option key={w.id} value={w.id}>
@@ -746,18 +774,18 @@ export default function WarehousesPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">Quantity to Transfer *</label>
+              <label className="block text-xs font-bold text-slate-900 mb-1">Quantity to Transfer *</label>
               <input
                 type="number"
                 min={1}
                 required
                 value={transferQty}
                 onChange={(e) => setTransferQty(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 font-mono focus:outline-none focus:border-purple-600 shadow-sm"
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
               <Button variant="outline" size="sm" type="button" onClick={() => setShowTransferModal(false)}>
                 Cancel
               </Button>
@@ -779,23 +807,23 @@ export default function WarehousesPage() {
           maxWidth="md"
         >
           <form onSubmit={handleSaveStockAdjustment} className="space-y-4">
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2 text-xs">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-400">Current Physical In-Stock:</span>
-                <span className="font-mono font-bold text-white">{showAdjustModal.inStock} Units</span>
+                <span className="text-slate-700 font-semibold">Current Physical In-Stock:</span>
+                <span className="font-mono font-bold text-slate-900">{showAdjustModal.inStock} Units</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Currently Reserved:</span>
-                <span className="font-mono font-bold text-amber-400">{showAdjustModal.reserved} Units</span>
+                <span className="text-slate-700 font-semibold">Currently Reserved:</span>
+                <span className="font-mono font-bold text-amber-700">{showAdjustModal.reserved} Units</span>
               </div>
-              <div className="flex justify-between border-t border-slate-800 pt-1.5">
-                <span className="text-slate-400">Net Available Qty:</span>
-                <span className="font-mono font-bold text-emerald-400">{showAdjustModal.available} Units</span>
+              <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                <span className="text-slate-700 font-semibold">Net Available Qty:</span>
+                <span className="font-mono font-bold text-emerald-700">{showAdjustModal.available} Units</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">
+              <label className="block text-xs font-bold text-slate-900 mb-1">
                 New Total Physical In-Stock Quantity *
               </label>
               <input
@@ -804,14 +832,14 @@ export default function WarehousesPage() {
                 required
                 value={adjustInStockQty}
                 onChange={(e) => setAdjustInStockQty(Number(e.target.value))}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white font-mono font-bold focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 font-mono font-bold focus:outline-none focus:border-purple-600 shadow-sm"
               />
-              <p className="text-[10px] text-slate-500 mt-1">
+              <p className="text-[10px] text-slate-600 mt-1 font-medium">
                 Available quantity will automatically re-calculate as <strong>New In-Stock ({adjustInStockQty}) - Reserved ({showAdjustModal.reserved}) = {Math.max(0, adjustInStockQty - showAdjustModal.reserved)}</strong>.
               </p>
             </div>
 
-            <div className="flex justify-end gap-3 pt-3 border-t border-slate-800">
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-200">
               <Button variant="outline" size="sm" type="button" onClick={() => setShowAdjustModal(null)}>
                 Cancel
               </Button>

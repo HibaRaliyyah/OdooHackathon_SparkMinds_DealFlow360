@@ -7,4 +7,5 @@ export {
   downloadInvoicePDF,
   downloadInvoiceXLS,
   exportAllInvoicesXLS,
+  formatDateForExcel,
 } from './documentExporter';

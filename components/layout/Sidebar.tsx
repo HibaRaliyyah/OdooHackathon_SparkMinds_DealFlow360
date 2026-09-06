@@ -19,6 +19,7 @@ import {
   Shield,
   Warehouse as WarehouseIcon,
   Truck,
+  Receipt,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -29,6 +30,7 @@ export function Sidebar() {
   const isAccountsAllowed = currentUser?.role === 'ADMIN' || currentUser?.role === 'SALES_MANAGER';
   const isWarehouseAllowed = currentUser?.role === 'ADMIN' || currentUser?.role === 'FINANCE';
   const isFulfillmentAllowed = currentUser?.role === 'ADMIN' || currentUser?.role === 'FINANCE' || currentUser?.role === 'SALES_MANAGER';
+  const isBillingAllowed = currentUser?.role === 'ADMIN' || currentUser?.role === 'FINANCE';
   const isAdmin = currentUser?.role === 'ADMIN';
 
   const navItems = [
@@ -37,6 +39,7 @@ export function Sidebar() {
     ...(isAccountsAllowed ? [{ label: 'Accounts', href: '/customers', icon: Users }] : []),
     ...(isWarehouseAllowed ? [{ label: 'Warehouse & Inventory', href: '/warehouses', icon: WarehouseIcon }] : []),
     ...(isFulfillmentAllowed ? [{ label: 'Fulfillment & Splits', href: '/fulfillment', icon: Truck }] : []),
+    ...(isBillingAllowed ? [{ label: 'Billing & Invoices', href: '/invoices', icon: Receipt }] : []),
     { label: 'Anomaly Radar', href: '/deal-health', icon: Radar },
     { label: 'Escalations', href: '/approvals', icon: AlertTriangle },
     { label: 'Reports', href: '/reports', icon: FileText },
@@ -50,7 +53,7 @@ export function Sidebar() {
         <div className={styles.brandHeader}>
           {!collapsed && (
             <div className={styles.brandLogo}>
-              <div className={styles.logoBadge}>DF</div>
+              <img src="/logo.png" alt="DealFlow360 Logo" className="w-8 h-8 rounded-full object-contain shadow-md" />
               <span className={styles.brandName}>DealFlow360</span>
             </div>
           )}

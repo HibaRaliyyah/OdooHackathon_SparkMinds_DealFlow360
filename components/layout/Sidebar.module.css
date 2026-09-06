@@ -94,23 +94,23 @@
   justify-content: space-between;
   padding: 0.55rem 0.75rem;
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: #334155;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   transition: all 0.15s ease;
 }
 
 .navLink:hover {
-  background-color: var(--bg-card-hover);
-  color: var(--text-primary);
+  background-color: #f1f5f9;
+  color: #0f172a;
 }
 
 .navLinkActive {
-  background-color: var(--bg-card-hover);
-  color: var(--accent-blue);
-  font-weight: 600;
-  border: 1px solid var(--border-medium);
+  background-color: #f3e8ff;
+  color: #9333ea;
+  font-weight: 700;
+  border: 1px solid #e9d5ff;
 }
 
 .navIcon {

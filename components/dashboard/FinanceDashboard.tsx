@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/data/store';
+import { confirmQuotationAndAllocate } from '@/lib/services/fulfillmentService';
+import { adjustInventoryForAllocations } from '@/lib/services/inventoryService';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Table } from '@/components/ui/Table';
@@ -28,8 +30,18 @@ import {
   AlertTriangle,
   Sparkles,
   Sliders,
+  FileSpreadsheet,
+  FileText,
+  Eye,
+  RotateCcw,
 } from 'lucide-react';
+
 import type { Warehouse, InventoryItem } from '@/lib/types';
+import {
+  downloadInvoicePDF,
+  downloadInvoiceXLS,
+  exportAllInvoicesXLS,
+} from '@/lib/utils/exportInvoice';
 
 export function FinanceDashboard() {
   const {
@@ -47,10 +59,19 @@ export function FinanceDashboard() {
     addInventoryItem,
     updateInventory,
     updateFulfillmentOrder,
+    creditNotes,
+    quotations,
+    updateQuotation,
+    addFulfillmentOrder,
+    addNotification,
+    addInvoice,
+    updateInvoice,
+    negotiations,
+    updateNegotiation,
   } = useStore();
 
   // Active Sub-tab in Finance Console
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'WAREHOUSE' | 'FULFILLMENT'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'WAREHOUSE' | 'FULFILLMENT' | 'BILLING'>('OVERVIEW');
 
   // Warehouse Search & Filters
   const [selectedWarehouseFilter, setSelectedWarehouseFilter] = useState<string>('ALL');
@@ -120,10 +141,28 @@ export function FinanceDashboard() {
       timestamp: new Date().toISOString(),
     });
     updateApprovalStage(reqId, 'Completed', 'Approved');
+
+    const q = quotations.find((quote) => quote.id === quoteId || quote.quoteNumber === quoteId);
+    if (q) {
+      confirmQuotationAndAllocate(q, {
+        updateQuotation,
+        fulfillmentOrders,
+        addFulfillmentOrder,
+        updateFulfillmentOrder,
+        addNotification,
+        addActivity,
+        warehouses,
+        invoices,
+        updateInvoice,
+        negotiations,
+        updateNegotiation,
+      });
+    }
+
     addActivity({
       id: `act-${Date.now()}`,
       type: 'approval',
-      message: `Riya Iyer signed off second-level approval and confirmed deal for fulfillment.`,
+      message: `Riya Iyer signed off second-level approval and confirmed deal for fulfillment resource allocation.`,
       relatedTo: quoteId,
       timestamp: new Date().toISOString(),
     });
@@ -251,34 +290,34 @@ export function FinanceDashboard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* Finance & Warehouse Hero Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-emerald-950/80 via-slate-900 to-teal-950 p-8 rounded-3xl border border-emerald-500/30 shadow-2xl backdrop-blur-xl">
+      <div className="relative overflow-hidden bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div>
             <div className="flex items-center gap-3">
-              <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5">
-                <Calculator className="w-3.5 h-3.5 text-emerald-400" /> Finance & Operations Control Hub
+              <span className="px-3 py-1 text-[11px] font-extrabold uppercase tracking-wider rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5">
+                <Calculator className="w-3.5 h-3.5 text-emerald-700" /> Finance & Operations Control Hub
               </span>
-              <span className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
-                <WarehouseIcon className="w-3 h-3 text-indigo-400" /> Integrated Warehouse & Stock Engine
+              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase rounded-full bg-indigo-100 text-indigo-900 border border-indigo-300 flex items-center gap-1">
+                <WarehouseIcon className="w-3 h-3 text-indigo-700" /> Integrated Warehouse & Stock Engine
               </span>
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight mt-3">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight mt-3">
               Financial Approvals, Warehouse Depots & Live Inventory
             </h1>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-700 font-medium mt-1 max-w-2xl leading-relaxed">
               Sign off 2nd-level approvals for high-risk quotes, manage physical warehouse facilities, monitor real-time stock allocation matrices, execute inter-depot transfers, and reconcile recurring invoices.
             </p>
 
             {/* Checklist */}
-            <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-slate-800 text-xs text-slate-300">
+            <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-slate-200 text-xs text-slate-700 font-medium">
               <span className="flex items-center gap-1.5 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> 2nd-Level Financial & Risk Approvals
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" /> 2nd-Level Financial & Risk Approvals
               </span>
               <span className="flex items-center gap-1.5 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Physical Depots & Auto-Split Stock Routing
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" /> Physical Depots & Auto-Split Stock Routing
               </span>
               <span className="flex items-center gap-1.5 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Inter-Depot Stock Transfers & Restocking
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" /> Inter-Depot Stock Transfers & Restocking
               </span>
             </div>
           </div>
@@ -300,6 +339,11 @@ export function FinanceDashboard() {
             >
               Stock Transfer
             </Button>
+            <Link href="/invoices">
+              <Button variant="outline" size="md" leftIcon={<Receipt className="w-4 h-4 text-amber-700" />}>
+                Billing & Invoices →
+              </Button>
+            </Link>
             <Link href="/warehouses">
               <Button variant="outline" size="md" leftIcon={<WarehouseIcon className="w-4 h-4" />}>
                 Warehouse Hub →
@@ -323,7 +367,7 @@ export function FinanceDashboard() {
       )}
 
       {/* Console Tab Switcher */}
-      <div className="flex items-center gap-2 border-b border-[var(--border-medium)] pb-3">
+      <div className="flex items-center gap-2 border-b border-[var(--border-medium)] pb-3 overflow-x-auto">
         <button
           onClick={() => setActiveTab('OVERVIEW')}
           className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
@@ -333,6 +377,17 @@ export function FinanceDashboard() {
           }`}
         >
           <Calculator className="w-4 h-4" /> Overview & Financial Controls
+        </button>
+
+        <button
+          onClick={() => setActiveTab('BILLING')}
+          className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+            activeTab === 'BILLING'
+              ? 'bg-amber-600 text-white shadow-md'
+              : 'bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]'
+          }`}
+        >
+          <Receipt className="w-4 h-4" /> Billing & Invoices System ({invoices.length})
         </button>
 
         <button
@@ -440,6 +495,77 @@ export function FinanceDashboard() {
           </div>
         </div>
       </div>
+
+      {/* ─── PENDING FINANCE ALLOCATION QUEUE ─── */}
+      {quotations.filter((q) => q.stage === 'Awaiting Allocation' || fulfillmentOrders.some((f) => (f.quotationId === q.id || f.quotationNumber === q.quoteNumber) && f.status === 'Awaiting')).length > 0 && (
+        <div className="card p-6 bg-amber-500/10 border-2 border-amber-500/30 space-y-4 shadow-lg animate-in fade-in duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-amber-500/20">
+            <div>
+              <h3 className="text-base font-extrabold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                <Boxes className="w-5 h-5 text-amber-500" /> Pending Fulfillment Allocations (Finance Action Required)
+              </h3>
+              <p className="text-xs text-amber-800 dark:text-amber-300">
+                Customer has confirmed proposal terms. Allocate physical warehouse depot stock to unlock customer payment.
+              </p>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-xs font-black bg-amber-500 text-slate-950 uppercase font-mono">
+              {quotations.filter((q) => q.stage === 'Awaiting Allocation' || fulfillmentOrders.some((f) => (f.quotationId === q.id || f.quotationNumber === q.quoteNumber) && f.status === 'Awaiting')).length} Pending Allocation
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {quotations
+              .filter((q) => q.stage === 'Awaiting Allocation' || fulfillmentOrders.some((f) => (f.quotationId === q.id || f.quotationNumber === q.quoteNumber) && f.status === 'Awaiting'))
+              .map((q) => (
+                <div
+                  key={q.id}
+                  className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-amber-300 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold text-slate-900 dark:text-white text-sm">Quote #{q.quoteNumber}</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">— {q.customerName}</span>
+                      <Badge variant="warning">Awaiting Allocation</Badge>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
+                      Confirmed by customer · Value: <strong className="text-slate-900 dark:text-white">${(q.oneTimeTotal + q.recurringTotal).toLocaleString()}</strong> · Items: {q.items?.length || 0} product lines
+                    </p>
+                    <div className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                      Action: Assign regional warehouse depots to reserve stock and enable customer payment.
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    leftIcon={<Boxes className="w-4 h-4" />}
+                    onClick={() => {
+                      confirmQuotationAndAllocate(q, {
+                        updateQuotation,
+                        fulfillmentOrders,
+                        addFulfillmentOrder,
+                        updateFulfillmentOrder,
+                        addNotification,
+                        addActivity,
+                        warehouses,
+                        inventory,
+                        updateInventory,
+                        invoices,
+                        addInvoice,
+                        updateInvoice,
+                        negotiations,
+                        updateNegotiation,
+                      });
+                      triggerBanner(`Depot stock allocated for Quote ${q.quoteNumber}! Customer payment is now unlocked.`);
+                    }}
+                  >
+                    Allocate Warehouses & Unlock Customer Payment
+                  </Button>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* ─── TAB CONTENT 1: OVERVIEW & APPROVALS ─── */}
       {(activeTab === 'OVERVIEW' || activeTab === 'FULFILLMENT') && secondLevelApprovals.length > 0 && (
@@ -801,13 +927,24 @@ export function FinanceDashboard() {
                           leftIcon={<CheckCircle2 className="w-4 h-4" />}
                           onClick={() => {
                             updateFulfillmentOrder(order.id, { status: 'Completed' });
+
+                            // Dynamically adjust warehouse inventory across physical depots
+                            adjustInventoryForAllocations(
+                              order.allocations || [],
+                              undefined,
+                              inventory,
+                              updateInventory,
+                              addInventoryItem,
+                              true
+                            );
+
                             addActivity({
                               id: `act-${Date.now()}`,
-                              message: `Finance Console: Order ${order.quotationNumber} split allocations approved & released for dispatch.`,
+                              message: `Finance Console: Order ${order.quotationNumber} split allocations approved & released for dispatch. Depot stock updated.`,
                               type: 'fulfillment',
                               timestamp: new Date().toISOString(),
                             });
-                            triggerBanner(`Order ${order.quotationNumber} warehouse split approved and dispatched!`);
+                            triggerBanner(`Order ${order.quotationNumber} warehouse split approved and dispatched! Depot stock numbers updated.`);
                           }}
                         >
                           Approve & Dispatch Split
@@ -878,8 +1015,20 @@ export function FinanceDashboard() {
                           <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                           <span>100% Physical Stock Reserved & Ready for Pick</span>
                         </div>
+                        {(alloc.backorderQty || 0) > 0 && (
+                          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-semibold space-y-0.5">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <RotateCcw className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span>↩ {alloc.backorderQty} Units Backordered & Returned</span>
+                            </div>
+                            <div className="text-[10px] opacity-80 font-mono">
+                              Surplus returned to {alloc.warehouseName} • Depot stock credited
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
+
                   </div>
                 </div>
               );
@@ -911,8 +1060,183 @@ export function FinanceDashboard() {
                     <div className="text-[10px] text-slate-400 mt-0.5 font-mono">Issued: {inv.createdAt ? inv.createdAt.slice(0, 10) : '2026-09-01'}</div>
                   </div>
                   <div className="text-right space-y-1">
-                    <div className="font-mono font-bold text-emerald-500 text-sm">${inv.total.toLocaleString()}</div>
+                    <div className="font-mono font-bold text-emerald-500 text-sm">${(inv.total ?? 0).toLocaleString()}</div>
                     <Badge variant={inv.status === 'Paid' ? 'success' : 'warning'}>{inv.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── TAB CONTENT 4: BILLING & INVOICES SYSTEM ─── */}
+      {activeTab === 'BILLING' && (
+        <div className="space-y-6">
+          <div className="card p-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
+              <div>
+                <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-amber-500" /> Recognized Invoices & Billing Operations
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Manage B2B billing schedules, downloadable PDF/Excel statements, and revenue reconciliations.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => exportAllInvoicesXLS(invoices)}
+                  leftIcon={<FileSpreadsheet className="w-4 h-4 text-emerald-400" />}
+                >
+                  Export All (XLS)
+                </Button>
+                <Link href="/invoices">
+                  <Button size="sm" variant="primary" leftIcon={<Plus className="w-4 h-4" />}>
+                    Open Dedicated Billing Hub →
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Invoices Summary Bar */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <div className="text-[11px] font-bold text-amber-400 uppercase">Total Recognized Invoiced</div>
+                <div className="text-2xl font-black font-mono text-[var(--text-primary)] mt-1">
+                  ${totalInvoiced.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-[var(--text-secondary)] mt-0.5">{invoices.length} total issued invoices</div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                <div className="text-[11px] font-bold text-emerald-400 uppercase">Collected Payments</div>
+                <div className="text-2xl font-black font-mono text-[var(--text-primary)] mt-1">
+                  ${totalPaid.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-emerald-400 mt-0.5">Reconciled into bank account</div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                <div className="text-[11px] font-bold text-rose-400 uppercase">Unpaid Outstanding</div>
+                <div className="text-2xl font-black font-mono text-[var(--text-primary)] mt-1">
+                  ${totalUnpaid.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-rose-400 mt-0.5">{invoices.filter((i) => i.status !== 'Paid').length} pending payment</div>
+              </div>
+            </div>
+
+            {/* Invoices Table */}
+            <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-[var(--bg-card-hover)] border-b border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] uppercase">
+                    <th className="py-3 px-4 text-left font-bold">Invoice #</th>
+                    <th className="py-3 px-4 text-left font-bold">Customer</th>
+                    <th className="py-3 px-4 text-left font-bold">Type</th>
+                    <th className="py-3 px-4 text-right font-bold">Total Amount</th>
+                    <th className="py-3 px-4 text-center font-bold">Status</th>
+                    <th className="py-3 px-4 text-left font-bold">Due Date</th>
+                    <th className="py-3 px-4 text-right font-bold">Download Formats</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)] text-xs">
+                  {invoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-[var(--bg-card-hover)] transition-colors">
+                      <td className="py-3 px-4 font-mono font-bold text-[var(--text-primary)]">
+                        {inv.invoiceNumber}
+                      </td>
+                      <td className="py-3 px-4 text-[var(--text-primary)] font-medium">
+                        {inv.customerName}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                          {inv.type}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-bold text-[var(--text-primary)]">
+                        ${inv.total.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <Badge
+                          variant={
+                            inv.status === 'Paid'
+                              ? 'success'
+                              : inv.status === 'Overdue'
+                              ? 'danger'
+                              : inv.status === 'Unpaid'
+                              ? 'warning'
+                              : 'neutral'
+                          }
+                        >
+                          {inv.status}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-[var(--text-secondary)] font-mono">
+                        {inv.dueDate}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => downloadInvoicePDF(inv)}
+                            className="p-1.5 rounded-lg bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 border border-rose-500/30 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                            title="Download PDF Invoice"
+                          >
+                            <FileText className="w-3.5 h-3.5" /> PDF
+                          </button>
+                          <button
+                            onClick={() => downloadInvoiceXLS(inv)}
+                            className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                            title="Download Excel / Spreadsheet Invoice"
+                          >
+                            <FileSpreadsheet className="w-3.5 h-3.5" /> XLS
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Credit Note Reconciliation & Offset Summary Card */}
+          <div className="card p-6 bg-[var(--bg-card)] border border-[var(--border-subtle)] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+              <div>
+                <h3 className="text-base font-extrabold text-[var(--text-primary)] flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-amber-500" /> Credit Note Reconciliation Module ({creditNotes.length})
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Track RMA returns, tax adjustment credits, and reconcile open customer invoice offsets.
+                </p>
+              </div>
+              <Link href="/invoices">
+                <Button size="sm" variant="outline" leftIcon={<ShieldCheck className="w-4 h-4 text-amber-400" />}>
+                  Reconcile Credits →
+                </Button>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {creditNotes.map((cn) => (
+                <div
+                  key={cn.id}
+                  className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 text-xs"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-mono font-bold text-amber-400">{cn.creditNoteNumber}</span>
+                    <Badge variant={cn.status === 'Applied' ? 'success' : cn.status === 'Approved' ? 'info' : 'warning'}>
+                      {cn.status}
+                    </Badge>
+                  </div>
+                  <div className="font-bold text-[var(--text-primary)]">{cn.customerName}</div>
+                  <div className="text-[11px] text-[var(--text-secondary)]">{cn.reason}</div>
+                  <div className="pt-2 border-t border-slate-800 flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400">Credit Amount:</span>
+                    <span className="font-mono font-bold text-emerald-400">${cn.amount.toFixed(2)}</span>
                   </div>
                 </div>
               ))}

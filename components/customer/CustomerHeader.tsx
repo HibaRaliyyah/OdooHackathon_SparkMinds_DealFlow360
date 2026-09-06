@@ -48,25 +48,6 @@ export function CustomerHeader() {
           <span>{tier} Tier</span>
         </div>
 
-        {/* Theme Toggle Button */}
-        <button
-          onClick={toggleTheme}
-          className={styles.bellBtn}
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {theme === 'dark' ? (
-            <Sun className="w-4 h-4 text-amber-400" />
-          ) : (
-            <Moon className="w-4 h-4 text-sky-600" />
-          )}
-        </button>
-
-        {/* Notifications Icon */}
-        <Link href="/portal/notifications" className={styles.bellBtn} title="Notifications">
-          <Bell className="w-4 h-4" />
-          {unreadCount > 0 && <span className={styles.bellDot} />}
-        </Link>
-
         {/* Customer User Details */}
         <div className={styles.userInfo}>
           <div className={styles.avatar}>

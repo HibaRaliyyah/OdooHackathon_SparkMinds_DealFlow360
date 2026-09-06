@@ -70,7 +70,7 @@ Return max 4 recommendations for products that genuinely complement what's in th
   const aiResponse = await callOpenRouter([
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: prompt },
-  ]);
+  ], true);
 
   if (!aiResponse) {
     return {

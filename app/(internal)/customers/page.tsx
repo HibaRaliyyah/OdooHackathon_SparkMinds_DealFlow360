@@ -49,14 +49,14 @@ export default function CustomersPage() {
       <div className="flex items-center gap-3">
         <BackButton />
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Customer Directory & Tier Policies</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Customer Directory & Tier Policies</h1>
+          <p className="text-xs text-slate-700 font-medium mt-1">
             Account tiering (Bronze, Silver, Gold, Platinum), payment terms, and discount ceilings
           </p>
         </div>
       </div>
 
-      <div className="card p-6 bg-[var(--bg-card)]">
+      <div className="card p-6 bg-white border border-slate-200 shadow-sm">
         <Table
           data={customers}
           keyExtractor={(c) => c.id}
@@ -65,12 +65,12 @@ export default function CustomersPage() {
               header: 'Company Name',
               cell: (c) => (
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[var(--accent-purple)]/10 text-[var(--accent-purple-light)]">
+                  <div className="p-2 rounded-lg bg-purple-100 text-purple-700 border border-purple-200">
                     <Building className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className="font-bold text-white">{c.company}</div>
-                    <div className="text-[10px] text-slate-400">{c.contact} ({c.email})</div>
+                    <div className="font-extrabold text-slate-900 text-sm">{c.company}</div>
+                    <div className="text-xs font-bold text-slate-900">{c.contact} ({c.email})</div>
                   </div>
                 </div>
               ),
@@ -78,7 +78,7 @@ export default function CustomersPage() {
             {
               header: 'Customer Tier',
               cell: (c) => (
-                <span className="px-2.5 py-1 rounded-full text-xs font-black uppercase bg-[var(--accent-indigo)]/15 text-[var(--accent-purple-light)] border border-[var(--accent-indigo)]/30">
+                <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-slate-100 text-slate-900 border border-slate-300">
                   {c.tier}
                 </span>
               ),
@@ -88,7 +88,7 @@ export default function CustomersPage() {
               cell: (c) => {
                 const pol = tierPolicies.find((t) => t.tier === c.tier);
                 return (
-                  <span className="font-mono text-xs font-bold text-amber-400">
+                  <span className="font-mono text-xs font-bold text-slate-900">
                     Max {pol?.discountCeiling || 15}%
                   </span>
                 );
@@ -96,7 +96,7 @@ export default function CustomersPage() {
             },
             {
               header: 'Payment Terms',
-              cell: (c) => <span className="font-mono text-xs text-slate-400">{c.paymentTerms}</span>,
+              cell: (c) => <span className="font-mono text-xs font-bold text-slate-900">{c.paymentTerms}</span>,
             },
           ]}
         />

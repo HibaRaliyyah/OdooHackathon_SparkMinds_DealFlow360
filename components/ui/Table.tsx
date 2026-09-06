@@ -33,29 +33,29 @@ export function Table<T>({
   }
 
   return (
-    <div className="table-container overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+    <div className="table-container overflow-x-auto rounded-xl border border-slate-200">
       <table className="w-full text-left text-sm border-collapse" style={{ minWidth }}>
-        <thead className="bg-[var(--bg-card-hover)] border-b border-[var(--border-subtle)]">
+        <thead className="bg-slate-100 border-b border-slate-200">
           <tr>
             {columns.map((col, idx) => (
               <th
                 key={idx}
-                className={`px-4 py-3 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider ${col.className || ''}`}
+                className={`px-4 py-3 text-xs font-extrabold text-slate-900 uppercase tracking-wider ${col.className || ''}`}
               >
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-[var(--border-subtle)] bg-[var(--bg-card)]">
+        <tbody className="divide-y divide-slate-200 bg-white">
           {data.map((item, idx) => (
             <tr
               key={`${keyExtractor(item)}-${idx}`}
               onClick={() => onRowClick && onRowClick(item)}
-              className={`table-row transition-colors ${onRowClick ? 'cursor-pointer hover:bg-[var(--bg-card-hover)]' : ''}`}
+              className={`table-row transition-colors ${onRowClick ? 'cursor-pointer hover:bg-slate-50' : ''}`}
             >
               {columns.map((col, colIdx) => (
-                <td key={colIdx} className={`px-4 py-3.5 text-sm text-[var(--text-secondary)] whitespace-nowrap ${col.className || ''}`}>
+                <td key={colIdx} className={`px-4 py-3.5 text-sm text-slate-900 font-semibold whitespace-nowrap ${col.className || ''}`}>
                   {col.cell ? col.cell(item) : col.accessorKey ? String(item[col.accessorKey] ?? '') : null}
                 </td>
               ))}

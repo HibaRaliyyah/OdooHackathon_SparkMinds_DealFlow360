@@ -89,7 +89,7 @@ export function CustomerProfileForm({
 
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Primary Contact Person</label>
-            <input {...register('contactName')} className={styles.input} />
+            <input {...register('contactName')} style={{ backgroundColor: '#ffffff', color: '#0f172a' }} className={styles.input} />
             {errors.contactName && (
               <span className={styles.errorText}>{errors.contactName.message}</span>
             )}
@@ -97,7 +97,7 @@ export function CustomerProfileForm({
 
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Contact Email</label>
-            <input {...register('email')} className={styles.input} />
+            <input {...register('email')} style={{ backgroundColor: '#ffffff', color: '#0f172a' }} className={styles.input} />
             {errors.email && (
               <span className={styles.errorText}>{errors.email.message}</span>
             )}
@@ -105,7 +105,7 @@ export function CustomerProfileForm({
 
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Contact Phone</label>
-            <input {...register('phone')} className={styles.input} />
+            <input {...register('phone')} style={{ backgroundColor: '#ffffff', color: '#0f172a' }} className={styles.input} />
             {errors.phone && (
               <span className={styles.errorText}>{errors.phone.message}</span>
             )}
@@ -115,7 +115,7 @@ export function CustomerProfileForm({
         <div className="space-y-4 pt-2 border-t border-[var(--border-subtle)]">
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Billing Address</label>
-            <input {...register('billingAddress')} className={styles.input} />
+            <input {...register('billingAddress')} style={{ backgroundColor: '#ffffff', color: '#0f172a' }} className={styles.input} />
             {errors.billingAddress && (
               <span className={styles.errorText}>{errors.billingAddress.message}</span>
             )}
@@ -123,7 +123,7 @@ export function CustomerProfileForm({
 
           <div className={styles.fieldGroup}>
             <label className={styles.label}>Shipping Address</label>
-            <input {...register('shippingAddress')} className={styles.input} />
+            <input {...register('shippingAddress')} style={{ backgroundColor: '#ffffff', color: '#0f172a' }} className={styles.input} />
             {errors.shippingAddress && (
               <span className={styles.errorText}>{errors.shippingAddress.message}</span>
             )}

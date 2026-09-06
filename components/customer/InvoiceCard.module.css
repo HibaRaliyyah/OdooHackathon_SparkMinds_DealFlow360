@@ -1,11 +1,12 @@
 .card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 1rem;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
 .header {
@@ -18,14 +19,14 @@
   font-size: 0.9375rem;
   font-weight: 800;
   font-family: var(--font-mono, monospace);
-  color: #818cf8;
+  color: #4f46e5;
 }
 
 .amount {
   font-size: 1.25rem;
   font-weight: 900;
   font-family: var(--font-mono, monospace);
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .detailsGrid {
@@ -36,13 +37,14 @@
 }
 
 .label {
-  color: #94a3b8;
+  color: #64748b;
   font-weight: 600;
 }
 
 .val {
-  color: #ffffff;
+  color: #0f172a;
   font-weight: 700;
+  font-family: var(--font-mono, monospace);
 }
 
 .actions {
@@ -51,7 +53,7 @@
   gap: 0.5rem;
   justify-content: flex-end;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 1px solid #e2e8f0;
 }
 
 .payBtn {

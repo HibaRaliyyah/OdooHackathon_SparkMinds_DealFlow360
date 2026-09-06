@@ -23,9 +23,27 @@ import {
   Info,
 } from 'lucide-react';
 import { canApproveQuotation } from '@/lib/services/permissionService';
+import { confirmQuotationAndAllocate } from '@/lib/services/fulfillmentService';
 
 export default function ApprovalsPage() {
-  const { approvalRequests, quotations, addApprovalAction, updateApprovalStage, addActivity, currentUser } = useStore();
+  const {
+    approvalRequests,
+    quotations,
+    updateQuotation,
+    addApprovalAction,
+    updateApprovalStage,
+    addActivity,
+    currentUser,
+    fulfillmentOrders,
+    addFulfillmentOrder,
+    updateFulfillmentOrder,
+    warehouses,
+    invoices,
+    updateInvoice,
+    addNotification,
+    negotiations,
+    updateNegotiation,
+  } = useStore();
   const [selectedReqId, setSelectedReqId] = useState<string | null>(null);
   const [actionType, setActionType] = useState<'Approve' | 'Reject' | 'Return' | null>(null);
   const [reasonText, setReasonText] = useState('');
@@ -76,10 +94,32 @@ export default function ApprovalsPage() {
       } else {
         updateApprovalStage(selectedReqId, 'Completed', 'Approved');
       }
+
+      // Find matching quotation and allocate to fulfillment
+      const matchingQuote = quotations.find(
+        (q) => q.id === req.quotationId || q.quoteNumber === req.quotationNumber
+      );
+      if (matchingQuote) {
+        confirmQuotationAndAllocate(matchingQuote, {
+          updateQuotation,
+          fulfillmentOrders,
+          addFulfillmentOrder,
+          updateFulfillmentOrder,
+          addNotification,
+          addActivity,
+          warehouses,
+          invoices,
+          updateInvoice,
+          negotiations,
+          updateNegotiation,
+        });
+      }
     } else if (actionType === 'Reject') {
       updateApprovalStage(selectedReqId, 'Rejected', 'Rejected');
+      if (req.quotationId) updateQuotation(req.quotationId, { stage: 'Rejected' });
     } else if (actionType === 'Return') {
       updateApprovalStage(selectedReqId, 'Sales Manager', 'Returned');
+      if (req.quotationId) updateQuotation(req.quotationId, { stage: 'Returned' });
     }
 
     addActivity({
@@ -103,22 +143,22 @@ export default function ApprovalsPage() {
         <div className="flex items-center gap-3 mb-2">
           <BackButton href="/dashboard" label="Dashboard" />
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-100 text-purple-900 border border-purple-300">
               B4 Discount Approvals Hub
             </span>
           </div>
         </div>
-        <h1 className="text-2xl font-black text-white tracking-tight mt-1.5">
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1.5">
           Multi-Stage Discount Approval & Audit Confirmation
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-700 font-medium mt-1">
           Review blended risk scores, inspect approval chain routing (Step 1: Sales Manager → Step 2: Finance), and enforce strict RBAC approval limits.
         </p>
       </div>
 
       {decisionSuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2.5 shadow-lg">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2.5 shadow-sm">
+          <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
           <span>{decisionSuccess}</span>
         </div>
       )}
@@ -138,18 +178,18 @@ export default function ApprovalsPage() {
           maxWidth="lg"
         >
           <div className="space-y-4 pt-1">
-            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1">
-              <div className="font-bold text-white flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+              <div className="font-extrabold text-slate-900 flex items-center justify-between">
                 <span>Quotation #{approvalRequests.find((r) => r.id === selectedReqId)?.quotationNumber}</span>
-                <span className="text-slate-400">Customer: {approvalRequests.find((r) => r.id === selectedReqId)?.customerName}</span>
+                <span className="text-slate-700 font-bold">Customer: {approvalRequests.find((r) => r.id === selectedReqId)?.customerName}</span>
               </div>
-              <p className="text-slate-400 text-[11px]">
-                Selected Action: <strong className="text-indigo-300">{actionType}</strong> · Stage: {approvalRequests.find((r) => r.id === selectedReqId)?.stage}
+              <p className="text-slate-800 text-[11px] font-medium">
+                Selected Action: <strong className="text-indigo-700 font-extrabold">{actionType}</strong> · Stage: {approvalRequests.find((r) => r.id === selectedReqId)?.stage}
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+              <label className="block text-xs font-bold text-slate-900 mb-1.5">
                 Audit Reason & Reviewer Notes (Required for Compliance Trace)
               </label>
               <textarea
@@ -157,11 +197,11 @@ export default function ApprovalsPage() {
                 value={reasonText}
                 onChange={(e) => setReasonText(e.target.value)}
                 placeholder="Provide business justification, margin rationale, or instructions for revision..."
-                className="w-full bg-[#141b2b] border border-slate-700/60 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:border-indigo-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
               <Button
                 variant="outline"
                 size="sm"
@@ -185,13 +225,13 @@ export default function ApprovalsPage() {
       )}
 
       {/* Pending Approvals Card */}
-      <div className="card p-6 bg-[var(--bg-card)] border border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+      <div className="card p-6 bg-white border border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
           <div className="flex items-center gap-2">
-            <Clock className="w-5 h-5 text-amber-400" />
-            <h2 className="text-base font-bold text-white">Pending Approval Requests ({pendingList.length})</h2>
+            <Clock className="w-5 h-5 text-amber-600" />
+            <h2 className="text-base font-extrabold text-slate-900">Pending Approval Requests ({pendingList.length})</h2>
           </div>
-          <span className="text-xs text-slate-400">Blended Risk Engine Monitored</span>
+          <span className="text-xs text-slate-700 font-medium">Blended Risk Engine Monitored</span>
         </div>
 
         <Table
@@ -202,10 +242,10 @@ export default function ApprovalsPage() {
               header: 'Quotation #',
               cell: (r) => (
                 <div>
-                  <Link href={`/quotations/${r.quotationId}`} className="font-mono font-bold text-white hover:text-indigo-400">
+                  <Link href={`/quotations/${r.quotationId}`} className="font-mono font-extrabold text-slate-900 hover:text-indigo-600">
                     {r.quotationNumber}
                   </Link>
-                  <div className="text-[10px] text-slate-500">{r.customerName}</div>
+                  <div className="text-[10px] text-slate-700 font-medium">{r.customerName}</div>
                 </div>
               ),
             },
@@ -213,11 +253,11 @@ export default function ApprovalsPage() {
               header: 'Required Step in Chain',
               cell: (r) => (
                 <div className="space-y-0.5">
-                  <span className="px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  <span className="px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase bg-amber-100 text-amber-800 border border-amber-300">
                     Step: {r.stage}
                   </span>
                   {r.riskLevel === 'HIGH' && (
-                    <div className="text-[9px] text-purple-300 font-medium">Followed by Finance Sign-off</div>
+                    <div className="text-[9px] text-purple-800 font-bold">Followed by Finance Sign-off</div>
                   )}
                 </div>
               ),
@@ -225,8 +265,8 @@ export default function ApprovalsPage() {
             {
               header: 'Blended Risk Score',
               cell: (r) => (
-                <div className="flex items-center gap-2 font-mono text-xs font-bold text-rose-400">
-                  <ShieldAlert className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2 font-mono text-xs font-black text-rose-700">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-700" />
                   <span>{r.riskScore}/100</span>
                   <Badge variant={r.riskLevel === 'HIGH' ? 'danger' : 'warning'}>{r.riskLevel}</Badge>
                 </div>
@@ -245,8 +285,8 @@ export default function ApprovalsPage() {
                 if (!auth.allowed) {
                   return (
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-amber-300/90 font-medium px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 max-w-[240px] truncate" title={auth.reason}>
-                        <Lock className="w-3 h-3 inline mr-1 text-amber-400" />
+                      <span className="text-[10px] text-amber-900 font-bold px-2 py-1 rounded bg-amber-50 border border-amber-200 max-w-[240px] truncate" title={auth.reason}>
+                        <Lock className="w-3 h-3 inline mr-1 text-amber-700" />
                         {auth.reason?.split('.')[0] || `Awaiting ${r.stage}`}
                       </span>
                       <Link href={`/quotations/${r.quotationId}`}>
@@ -299,8 +339,8 @@ export default function ApprovalsPage() {
       </div>
 
       {/* Completed Approvals History & Audit Log */}
-      <div className="card p-6 bg-[var(--bg-card)]">
-        <h2 className="text-base font-bold text-white mb-4">Completed Approvals & Audit History</h2>
+      <div className="card p-6 bg-white border border-slate-200 shadow-sm">
+        <h2 className="text-base font-extrabold text-slate-900 mb-4">Completed Approvals & Audit History</h2>
         <Table
           data={completedList}
           keyExtractor={(r) => r.id}
@@ -308,14 +348,14 @@ export default function ApprovalsPage() {
             {
               header: 'Quotation #',
               cell: (r) => (
-                <Link href={`/quotations/${r.quotationId}`} className="font-mono font-bold text-white">
+                <Link href={`/quotations/${r.quotationId}`} className="font-mono font-extrabold text-slate-900 hover:text-indigo-600">
                   {r.quotationNumber}
                 </Link>
               ),
             },
             {
               header: 'Customer',
-              cell: (r) => <span className="font-semibold text-xs text-white">{r.customerName}</span>,
+              cell: (r) => <span className="font-bold text-xs text-slate-900">{r.customerName}</span>,
             },
             {
               header: 'Final Status',
@@ -324,7 +364,7 @@ export default function ApprovalsPage() {
             {
               header: 'Audit Trail Entries',
               cell: (r) => (
-                <span className="font-mono text-xs text-indigo-300">
+                <span className="font-mono text-xs text-indigo-700 font-bold">
                   {r.actions?.length || 1} Recorded Log Actions
                 </span>
               ),

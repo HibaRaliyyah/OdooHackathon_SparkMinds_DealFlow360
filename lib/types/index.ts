@@ -125,6 +125,8 @@ export type QuotationStage =
   | 'Pending Approval'
   | 'Approved'
   | 'Negotiation'
+  | 'Awaiting Allocation'
+  | 'Allocated'
   | 'Confirmed'
   | 'Rejected'
   | 'Returned'
@@ -225,6 +227,7 @@ export interface NegotiationMessage {
   senderRole: UserRole | 'CUSTOMER';
   message: string;
   timestamp: string;
+  read?: boolean;
 }
 
 export interface NegotiationRequest {
@@ -345,6 +348,7 @@ export interface Invoice {
   status: InvoiceStatus;
   dueDate: string;
   paidAmount: number;
+  dueAmount?: number;
   payments: Payment[];
   createdAt: string;
   updatedAt: string;
@@ -362,6 +366,33 @@ export interface Payment {
   method: 'Bank Transfer' | 'Credit Card' | 'Check' | 'Wire';
   reference: string;
   status: 'Pending' | 'Confirmed';
+}
+
+// ─── Credit Notes & Reconciliation ────────────────────────────
+export type CreditNoteStatus = 'Draft' | 'Approved' | 'Applied' | 'Refunded';
+export type CreditNoteReason =
+  | 'Product Return / RMA'
+  | 'Billing / Tax Correction'
+  | 'Volume Rebate & Discount'
+  | 'SLA Breach Penalty'
+  | 'Goodwill Customer Credit';
+
+export interface CreditNote {
+  id: string;
+  creditNoteNumber: string;
+  quotationNumber?: string;
+  invoiceId?: string;
+  invoiceNumber?: string;
+  customerId: string;
+  customerName: string;
+  amount: number;
+  reason: CreditNoteReason;
+  status: CreditNoteStatus;
+  issuedDate: string;
+  reconciledDate?: string;
+  appliedInvoiceNumber?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 // ─── Subscriptions ───────────────────────────────────────────

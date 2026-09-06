@@ -161,7 +161,7 @@ exports.acceptQuotation = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Quotation accepted and order confirmed!',
+      message: 'Quotation accepted and submitted to Finance for warehouse allocation.',
       data: sanitizeQuoteForCustomer(quote),
     });
   } catch (error) {

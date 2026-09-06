@@ -19,8 +19,26 @@ import {
   Check,
 } from 'lucide-react';
 
+import { submitQuotationForFinanceAllocation } from '@/lib/services/fulfillmentService';
+
 export function CustomerDashboard() {
-  const { quotations, fulfillmentOrders, invoices, subscriptions, updateInvoice, updateQuotation, addActivity } = useStore();
+  const {
+    quotations,
+    fulfillmentOrders,
+    invoices,
+    subscriptions,
+    updateInvoice,
+    updateQuotation,
+    addActivity,
+    addFulfillmentOrder,
+    updateFulfillmentOrder,
+    warehouses,
+    inventory,
+    updateInventory,
+    addNotification,
+    negotiations,
+    updateNegotiation,
+  } = useStore();
   const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
   const [confirmingQuoteId, setConfirmingQuoteId] = useState<string | null>(null);
   const [confirmedSuccess, setConfirmedSuccess] = useState(false);
@@ -49,14 +67,21 @@ export function CustomerDashboard() {
   const handle1ClickConfirmTerms = (quoteId: string) => {
     setConfirmingQuoteId(quoteId);
     setTimeout(() => {
-      updateQuotation(quoteId, { stage: 'Confirmed' });
-      addActivity({
-        id: `act-${Date.now()}`,
-        type: 'negotiation',
-        message: 'Tom Acme (Customer) confirmed final contract terms with 1-click accept.',
-        relatedTo: quoteId,
-        timestamp: new Date().toISOString(),
-      });
+      const q = quotations.find((quote) => quote.id === quoteId || quote.quoteNumber === quoteId);
+      if (q) {
+        submitQuotationForFinanceAllocation(q, {
+          updateQuotation,
+          addNotification,
+          addActivity,
+          fulfillmentOrders,
+          addFulfillmentOrder,
+          updateFulfillmentOrder,
+          negotiations,
+          updateNegotiation,
+        });
+      } else {
+        updateQuotation(quoteId, { stage: 'Awaiting Allocation' });
+      }
       setConfirmingQuoteId(null);
       setConfirmedSuccess(true);
     }, 600);
@@ -220,15 +245,15 @@ export function CustomerDashboard() {
               isLoading={confirmingQuoteId === 'quote-1'}
               onClick={() => handle1ClickConfirmTerms('quote-1')}
             >
-              {confirmedSuccess ? 'Terms Confirmed!' : '1-Click Confirm Terms'}
+              {confirmedSuccess ? 'Terms Confirmed & Submitted!' : '1-Click Confirm Terms'}
             </Button>
           </div>
         </div>
 
         {confirmedSuccess && (
-          <div className="p-3 mb-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>Success! Contract terms confirmed with 1-click acceptance. Deal locked for warehouse fulfillment.</span>
+          <div className="p-3 mb-4 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-amber-400" />
+            <span>Success! Contract terms confirmed. Transferred to Finance for warehouse depot allocation — payment will unlock once allocation is complete.</span>
           </div>
         )}
 
