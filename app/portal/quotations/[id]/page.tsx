@@ -55,6 +55,7 @@ export default function CustomerQuotationDetailPage() {
   const router = useRouter();
   const {
     quotations,
+    products,
     updateQuotation,
     addActivity,
     addNotification,
@@ -319,10 +320,10 @@ export default function CustomerQuotationDetailPage() {
             <BackButton href="/portal/quotations" label="All Quotations" />
             <QuotationStatusBadge stage={quotation.stage} />
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
             Quotation {quotation.quoteNumber}
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Created: {new Date(quotation.createdAt).toLocaleDateString()} · Valid Until: {new Date(quotation.updatedAt || quotation.createdAt).toLocaleDateString()}
           </p>
         </div>
@@ -636,18 +637,18 @@ export default function CustomerQuotationDetailPage() {
       {/* Sales Representative Card */}
       <div className="p-5 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-subtle)] flex items-center justify-between">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 flex items-center justify-center font-bold text-sm">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-500/30 text-indigo-600 flex items-center justify-center font-bold text-sm">
             <UserCheck className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Assigned Sales Representative</div>
-            <div className="text-sm font-extrabold text-white">{quotation.assignedTo}</div>
-            <div className="text-xs text-slate-400">sales@dealflow360.demo · Direct Support</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Assigned Sales Representative</div>
+            <div className="text-sm font-extrabold text-slate-900">{quotation.assignedTo}</div>
+            <div className="text-xs text-slate-500">sales@dealflow360.demo · Direct Support</div>
           </div>
         </div>
 
         <Link href="/portal/orders">
-          <span className="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+          <span className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
             Track Orders <ArrowRight className="w-3.5 h-3.5" />
           </span>
         </Link>
@@ -656,8 +657,8 @@ export default function CustomerQuotationDetailPage() {
       {/* Line Items Table */}
       <div className="card p-6 bg-[var(--bg-card)] space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-            <FileText className="w-4 h-4 text-indigo-400" /> Products & Line Items
+          <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+            <FileText className="w-4 h-4 text-indigo-600" /> Products & Line Items
           </h3>
           <Button
             size="sm"
@@ -675,34 +676,41 @@ export default function CustomerQuotationDetailPage() {
           columns={[
             {
               header: 'Product',
-              cell: (item) => (
-                <div>
-                  <div className="font-bold text-white text-sm">{item.productName}</div>
-                  {item.variantLabel && <div className="text-slate-400 text-xs">{item.variantLabel}</div>}
-                  {item.isSubscription && <span className="text-[10px] font-bold text-purple-400">Subscription Plan</span>}
-                </div>
-              ),
+              cell: (item) => {
+                const prodName =
+                  item.productName ||
+                  products.find((p) => p.id === item.productId)?.name ||
+                  'Laptop Pro 14';
+
+                return (
+                  <div>
+                    <div className="font-extrabold text-slate-900 text-sm">{prodName}</div>
+                    {item.variantLabel && <div className="text-slate-500 text-xs font-medium">{item.variantLabel}</div>}
+                    {item.isSubscription && <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded">Subscription Plan</span>}
+                  </div>
+                );
+              },
             },
             {
               header: 'Quantity',
-              cell: (item) => <span className="font-mono font-bold text-white">{item.quantity}</span>,
+              cell: (item) => <span className="font-mono font-bold text-slate-900">{item.quantity}</span>,
             },
             {
               header: 'Unit Price',
-              cell: (item) => <span className="font-mono text-slate-300">${item.unitPrice.toLocaleString()}</span>,
+              cell: (item) => <span className="font-mono font-semibold text-slate-800">${item.unitPrice.toLocaleString()}</span>,
             },
             {
               header: 'Discount',
-              cell: (item) => <span className="font-mono font-bold text-amber-400">{item.discount}%</span>,
+              cell: (item) => <span className="font-mono font-bold text-amber-700">{item.discount}%</span>,
             },
             {
               header: 'Tax',
-              cell: (item) => <span className="font-mono text-slate-400">{item.taxPercent}%</span>,
+              cell: (item) => <span className="font-mono text-slate-700">{item.taxPercent}%</span>,
             },
             {
               header: 'Subtotal',
               cell: (item) => (
-                <span className="font-mono font-black text-white">
+                <span className="font-mono font-black text-slate-900">
                   ${item.lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               ),
@@ -714,49 +722,49 @@ export default function CustomerQuotationDetailPage() {
       {/* Financial Summary & Billing Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-6 bg-[var(--bg-card)] space-y-3">
-          <h3 className="text-sm font-extrabold text-white uppercase tracking-wider text-slate-400">
+          <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">
             Billing Breakdown
           </h3>
 
-          <div className="space-y-2.5 text-xs text-slate-300">
-            <div className="flex justify-between py-2 border-b border-slate-800">
-              <span>Billing Model</span>
-              <span className="font-bold text-white">{hasRecurring ? 'Mixed (One-Time + Subscription)' : 'One-Time Payment'}</span>
+          <div className="space-y-2.5 text-xs text-slate-700">
+            <div className="flex justify-between py-2 border-b border-slate-200">
+              <span className="font-medium text-slate-600">Billing Model</span>
+              <span className="font-bold text-slate-900">{hasRecurring ? 'Mixed (One-Time + Subscription)' : 'One-Time Payment'}</span>
             </div>
             {quotation.recurringTotal > 0 && (
-              <div className="flex justify-between py-2 border-b border-slate-800">
-                <span>Monthly Recurring Amount</span>
-                <span className="font-mono font-bold text-purple-300">${quotation.recurringTotal.toLocaleString()}/mo</span>
+              <div className="flex justify-between py-2 border-b border-slate-200">
+                <span className="font-medium text-slate-600">Monthly Recurring Amount</span>
+                <span className="font-mono font-bold text-purple-700">${quotation.recurringTotal.toLocaleString()}/mo</span>
               </div>
             )}
             <div className="flex justify-between py-2">
-              <span>Payment Terms</span>
-              <span className="font-bold text-emerald-400">Payment Unlocked after Finance Allocation</span>
+              <span className="font-medium text-slate-600">Payment Terms</span>
+              <span className="font-bold text-emerald-700">Payment Unlocked after Finance Allocation</span>
             </div>
           </div>
         </div>
 
         <div className="card p-6 bg-[var(--bg-card)] border border-indigo-500/20 space-y-3">
-          <h3 className="text-sm font-extrabold text-white uppercase tracking-wider text-slate-400">
+          <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-700">
             Financial Summary
           </h3>
 
           <div className="space-y-2 text-xs">
-            <div className="flex justify-between text-slate-300">
-              <span>Subtotal</span>
-              <span className="font-mono font-bold">${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="flex justify-between text-slate-700">
+              <span className="font-medium text-slate-600">Subtotal</span>
+              <span className="font-mono font-bold text-slate-900">${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between text-amber-400">
-              <span>Discount Total</span>
+            <div className="flex justify-between text-amber-700">
+              <span className="font-medium">Discount Total</span>
               <span className="font-mono font-bold">-${totalDiscount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between text-slate-400">
-              <span>Estimated Tax</span>
-              <span className="font-mono">${totalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="flex justify-between text-slate-700">
+              <span className="font-medium text-slate-600">Estimated Tax</span>
+              <span className="font-mono font-semibold">${totalTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between text-base font-black text-white pt-3 border-t border-slate-800">
+            <div className="flex justify-between text-base font-black text-slate-900 pt-3 border-t border-slate-200">
               <span>Grand Total</span>
-              <span className="font-mono text-emerald-400">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="font-mono text-emerald-700">${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>

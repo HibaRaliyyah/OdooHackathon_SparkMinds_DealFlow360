@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/lib/data/store';
-import { useTheme } from '@/components/theme/ThemeProvider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import styles from './Header.module.css';
@@ -11,8 +10,6 @@ import {
   Bell,
   ChevronDown,
   User as UserIcon,
-  Sun,
-  Moon,
   Shield,
   Briefcase,
   Award,
@@ -25,7 +22,6 @@ import {
 
 export function Header() {
   const { currentUser, users, setCurrentUser, logout, notifications, markNotificationRead } = useStore();
-  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -139,19 +135,6 @@ export function Header() {
 
       {/* Action Controls */}
       <div className={styles.actionsGroup}>
-        {/* Theme Toggle Button (Light / Dark) */}
-        <button
-          onClick={toggleTheme}
-          className={styles.iconBtn}
-          title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          {theme === 'dark' ? (
-            <Sun className="w-4 h-4 text-amber-400" />
-          ) : (
-            <Moon className="w-4 h-4 text-sky-600" />
-          )}
-        </button>
-
         {/* Interactive Notifications Button & Dropdown */}
         <div className="relative" ref={notifRef}>
           <button

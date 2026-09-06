@@ -49,8 +49,8 @@ export default function CustomerQuotationsPage() {
               Assigned Quotations
             </span>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Your Quotations & Proposals</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Your Quotations & Proposals</h1>
+          <p className="text-xs text-slate-500 mt-1">
             Review pricing details, request changes, or accept final quotation terms.
           </p>
         </div>
@@ -65,7 +65,7 @@ export default function CustomerQuotationsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search quote # or rep..."
-            className="w-full bg-[#0f172a] border border-slate-700/60 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-500"
           />
         </div>
 
@@ -74,7 +74,7 @@ export default function CustomerQuotationsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#0f172a] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500"
+            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
           >
             <option value="all">All Statuses</option>
             <option value="pending">Awaiting Customer</option>
@@ -101,7 +101,7 @@ export default function CustomerQuotationsPage() {
 
                 return (
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-indigo-300">{q.quoteNumber}</span>
+                    <span className="font-mono font-bold text-indigo-600">{q.quoteNumber}</span>
                     {isUnderNegotiation && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-cyan-500 text-slate-950 border border-cyan-300 flex items-center gap-1 shadow-md animate-pulse">
                         <MessageSquare className="w-3 h-3 text-slate-950" />
@@ -114,23 +114,23 @@ export default function CustomerQuotationsPage() {
             },
             {
               header: 'Created Date',
-              cell: (q) => <span className="text-slate-300 text-xs">{new Date(q.createdAt).toLocaleDateString()}</span>,
+              cell: (q) => <span className="text-slate-700 text-xs font-medium">{new Date(q.createdAt).toLocaleDateString()}</span>,
             },
             {
               header: 'Valid Until',
-              cell: (q) => <span className="text-slate-300 text-xs">{new Date(q.updatedAt || q.createdAt).toLocaleDateString()}</span>,
+              cell: (q) => <span className="text-slate-700 text-xs font-medium">{new Date(q.updatedAt || q.createdAt).toLocaleDateString()}</span>,
             },
             {
               header: 'Total Value',
               cell: (q) => (
-                <span className="font-mono font-black text-white">
+                <span className="font-mono font-black text-slate-900">
                   ${((q.oneTimeTotal || 0) + (q.recurringTotal || 0)).toLocaleString()}
                 </span>
               ),
             },
             {
               header: 'Discount',
-              cell: (q) => <span className="font-mono font-bold text-amber-400">{q.totalDiscount ? `$${q.totalDiscount}` : '10%'}</span>,
+              cell: (q) => <span className="font-mono font-bold text-amber-700">{q.totalDiscount ? `$${q.totalDiscount}` : '10%'}</span>,
             },
             {
               header: 'Status',
