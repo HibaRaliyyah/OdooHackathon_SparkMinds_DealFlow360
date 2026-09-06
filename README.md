@@ -239,7 +239,7 @@ npm run start
 
 **Event**: Odoo Hackathon  
 **Team**: SparkMinds  
-**Members**: Hiba Raliyyah & Team  
+**Members**: Hiba Raliyyah & Mahalashmi
 
 ---
 
