@@ -3,13 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { useStore } from '@/lib/data/store';
-import { useTheme } from '@/components/theme/ThemeProvider';
 import styles from './CustomerHeader.module.css';
-import { Bell, Crown, Award, Gem, Medal, Sun, Moon } from 'lucide-react';
+import { Bell, Crown, Award, Gem, Medal } from 'lucide-react';
 
 export function CustomerHeader() {
   const { currentUser, customers, notifications } = useStore();
-  const { theme, toggleTheme } = useTheme();
 
   const customerRecord = customers.find(
     (c) => c.company === currentUser?.company || c.email === currentUser?.email

@@ -3,6 +3,7 @@
 import React from 'react';
 import { CustomerSidebar } from '@/components/customer/CustomerSidebar';
 import { CustomerHeader } from '@/components/customer/CustomerHeader';
+import { DealFlowCustomerChat } from '@/components/ai/DealFlowCustomerChat';
 
 export default function CustomerPortalLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,6 +18,8 @@ export default function CustomerPortalLayout({ children }: { children: React.Rea
           {children}
         </main>
       </div>
+      {/* DealFlow Friendly Customer AI — portal-only */}
+      <DealFlowCustomerChat />
     </div>
   );
 }

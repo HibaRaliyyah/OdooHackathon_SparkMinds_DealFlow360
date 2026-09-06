@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, MessageSquare, X, Send, Bot, User, Loader2, Zap } from 'lucide-react';
+import { useStore } from '@/lib/data/store';
 
 interface Message {
   id: string;
@@ -74,6 +75,8 @@ function renderStructuredContent(rawText: string) {
 }
 
 export function AIChatbot() {
+  const { currentUser } = useStore();
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -96,6 +99,11 @@ export function AIChatbot() {
       scrollToBottom();
     }
   }, [messages, isOpen]);
+
+  // Authorization check: only internal staff roles (ADMIN, SALES_REP, SALES_MANAGER, FINANCE) can access
+  if (!currentUser || currentUser.role === 'CUSTOMER') {
+    return null;
+  }
 
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
@@ -123,7 +131,12 @@ export function AIChatbot() {
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: query, history }),
+        body: JSON.stringify({ 
+          message: query, 
+          history,
+          role: currentUser.role,
+          userName: currentUser.name,
+        }),
       });
 
       const data = await res.json();
